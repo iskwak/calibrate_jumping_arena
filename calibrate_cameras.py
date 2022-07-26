@@ -10,6 +10,7 @@ import time
 import scipy
 from scipy.cluster.vq import kmeans,vq,whiten
 import random
+import os
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("calib_frames", None, "Calibration frames data.")
@@ -181,11 +182,14 @@ def main(argv):
         frame = None
         to_draw = False
 
+    if FLAGS.out_dir is not None:
+        os.makedirs(FLAGS.out_dir, exist_ok=True)
 
     width = calib_frames[0].frame_size
     width = width[0]
     offsets = [0, width, 2 * width]
     all_corners = get_corners(frame, calib_frames, offsets, to_draw)
+
     if FLAGS.out_dir is not None:
         outname = FLAGS.out_dir + "/all_corners.png"
         cv2.imwrite(outname, frame)
@@ -202,8 +206,10 @@ def main(argv):
     if FLAGS.out_dir is not None and FLAGS.input_video is not None:
         frame = org_frame.copy()
         draw_clusters(rng, frame, all_corners, all_cluster_idx, FLAGS.num_frames, offsets)
-        cv2.imshow("frame", frame)
-        cv2.waitKey()
+        outname = FLAGS.out_dir + "/clustered_corners.png"
+        cv2.imwrite(outname, frame)
+        # cv2.imshow("frame", frame)
+        # cv2.waitKey()
 
     # for each cluster, sample 1 checker boards to use for calibration
     all_sampled, all_sampled_idxs, all_cluster_ids = sample_corners(rng, all_corners, all_cluster_idx, FLAGS.num_frames)
@@ -212,11 +218,11 @@ def main(argv):
     if FLAGS.out_dir is not None and FLAGS.input_video is not None:
         frame = org_frame.copy()
         draw_clusters(rng, frame, all_sampled, all_cluster_ids, FLAGS.num_frames, offsets)
-        outname = FLAGS.out_dir + "/clusters_samples.png"
+        outname = FLAGS.out_dir + "/clusters_sampled.png"
         cv2.imwrite(outname, frame)
-        cv2.imshow("frame", frame)
-        cv2.waitKey()
-        cv2.destroyAllWindows()
+        # cv2.imshow("frame", frame)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
 
     calibrated_cam_data = []
     # use the sampled points to create the camera calibration

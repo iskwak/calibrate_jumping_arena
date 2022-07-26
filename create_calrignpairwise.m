@@ -16,29 +16,3 @@ function create_calrignpairwise(outname, calib_filenames)
     multicam = CalRigNPairwiseCalibrated(s);
     save(outname, 'multicam');
 end
-
-
-    % function obj = CalRigNPairwiseCalibrated(varargin)
-    %   if nargin==1 
-    %     if isstruct(varargin{1})
-    %       s = varargin{1};
-    %     end
-    %   end
-        
-    %   ncam = s.nviews;
-    %   obj.nviews = ncam;
-    %   obj.crigStros = cell(ncam);
-    %   crigs = s.calibrations;
-    %   c = 1;
-    %   % ordering of stereo crigs assumed
-    %   for icam=1:ncam
-    %   for jcam=icam+1:ncam
-    %     obj.crigStros{icam,jcam} = crigs{c};
-    %     c = c+1;
-    %   end
-    %   end
-      
-    %   assert(c==numel(crigs)+1);
-      
-    %   obj.viewNames = arrayfun(@(x)sprintf('view%d',x),(1:ncam)','uni',0);
-    % end     

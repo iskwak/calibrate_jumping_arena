@@ -91,7 +91,7 @@ def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam
     # cv2.imshow("frame", frame)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
-    cv2.imwrite("stereo_reprojections/{}{}_{}.png".format(cam1_id, cam2_id, frame_idx), frame)
+    cv2.imwrite("{}/stereo_reprojections/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), frame)
 
 
 def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2, cam1_id, cam2_id):
@@ -125,14 +125,31 @@ def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2
     # cv2.imshow("frame", frame)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
-    cv2.imwrite("paired/{}{}_{}.png".format(cam1_id, cam2_id, frame_idx), frame)
+    cv2.imwrite("{}/paired/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), frame)
 
 
-def draw_corners_with_offset(image, corners, color, markerSize, offset):
-    for i in range(len(corners)):
+def draw_corners_with_offset(image, corners, color, markerSize, offset, markerType=cv2.MARKER_CROSS):
+    for i in range(corners.shape[0]):
         cv2.drawMarker(image, (int(corners[i, 0])+offset, int(corners[i, 1])), color,
-            markerType=cv2.MARKER_CROSS, markerSize=markerSize)
+            markerType=markerType, markerSize=markerSize)
 
+
+def draw_paired_clusters(rng, frame, corners1, corners2, cluster_ids, num_clusters, offset1, offset2, markerSize, markerType=cv2.MARKER_CROSS):
+    # create random colors
+    colors = []
+    for i in range(num_clusters):
+        random_color = (rng.randint(0, 256), rng.randint(0, 256), rng.randint(0, 256))
+        # random_color = (int(random_color[0]), int(random_color[1]), int(random_color[2]))
+        colors.append(random_color)
+
+
+    for i in range(num_clusters):
+        current_cluster_idxs = np.where(np.asarray(cluster_ids) == i)
+        current_corners1 = corners1[current_cluster_idxs]
+        draw_corners_with_offset(frame, current_corners1, colors[i], markerSize, offset1, markerType)
+
+        current_corners2 = corners2[current_cluster_idxs]
+        draw_corners_with_offset(frame, current_corners2, colors[i], markerSize, offset2, markerType)
 
 
 def write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id):
@@ -142,7 +159,7 @@ def write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam
         write_stereo_points(cap, cam1points, cam2points, frame_idx[i], offsets[cam1_id], offsets[cam2_id], cam1_id, cam2_id)        
 
 
-def sample_corners(rng, current_corners, cluster_ids, num_clusters, num_samples=10):
+def sample_corners(rng, current_corners, cluster_ids, num_clusters, num_samples=1):
     # store the sampled points here, then concatentate
     sampled_corners =  []
     sampled_idx = [] # indexing into the corners
@@ -151,13 +168,17 @@ def sample_corners(rng, current_corners, cluster_ids, num_clusters, num_samples=
     for j in range(num_clusters):
         clustered_indices = np.where(cluster_ids == j)
         clustered_indices = clustered_indices[0] # where returns a tuple for me
+        if clustered_indices.size == 0:
+            # is break correct here? is there a case where the first empty cluster isn't followed by more
+            # empty clusters?
+            continue
         rng.shuffle(clustered_indices) # in place operation
         sampled_idx.append(clustered_indices[:num_samples])
         sampled = calibrate_cameras.index_list(current_corners, clustered_indices[:num_samples])
         sampled_corners.append(sampled)
         sampled_cluster_idx.append([j] * num_samples)
 
-    flat_sampled = np.concatenate(sampled_corners, axis=0)
+    flat_sampled = np.vstack(sampled_corners)
     flat_cluster_ids = [x for xs in sampled_cluster_idx for x in xs]
     flat_sampled_idx = [x for xs in sampled_idx for x in xs]
 
@@ -168,7 +189,7 @@ def cluster_corners(corners, num_clusters, seed):
     centroids, _ = kmeans(corners, num_clusters, seed=seed)
     clx, _ = vq(corners, centroids)
 
-    return clx
+    return clx, centroids
 
 
 def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_calibs):
@@ -180,10 +201,10 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     fps = cap.get(cv2.CAP_PROP_FPS)
     offsets = [0, width, 2 * width]
     ret, frame = cap.read()
-    num_clusters = 10 
+
     all_corners = calibrate_cameras.get_corners(frame, calib_frames, offsets, True)
 
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 1000, 0.0001)
     all_calibs = []
     for overlapping_frames in all_overlapping_frames:
         cam1_id = overlapping_frames["view1"]
@@ -199,24 +220,84 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         imgpoints1 = calibrate_cameras.index_list(cam1_frames.corners2, overlapping_frames["overlapping1"])
         imgpoints2 = calibrate_cameras.index_list(cam2_frames.corners2, overlapping_frames["overlapping2"])
         frame_idx = calibrate_cameras.index_list(cam1_frames.frame_numbers, overlapping_frames["overlapping1"])
-        
+
         clustering_corner_cam1 = all_corners[cam1_id][overlapping_frames["overlapping1"], :]
         clustering_corner_cam2 = all_corners[cam2_id][overlapping_frames["overlapping2"], :]
-        
+
+        # # debug, loop over and plot the corners
+        # for i_frame in range(len(frame_idx)):
+        #     current_frame_idx = frame_idx[i_frame]
+        #     cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_idx - 1)
+        #     ret, current_frame = cap.read()
+
+        #     #import pdb; pdb.set_trace()
+        #     draw_corners_with_offset(current_frame, imgpoints1[i_frame].squeeze(), (255, 0, 0), 5, offsets[cam1_id])
+        #     draw_corners_with_offset(current_frame, imgpoints2[i_frame].squeeze(), (0, 255, 0), 5, offsets[cam2_id])
+
+        #     draw_corners_with_offset(current_frame, clustering_corner_cam1[i_frame].reshape(1, 2), (0, 0, 255), 5, offsets[cam1_id])
+        #     draw_corners_with_offset(current_frame, clustering_corner_cam2[i_frame].reshape(1, 2), (0, 0, 255), 5, offsets[cam2_id])
+        #     cv2.imshow("moo", current_frame)
+        #     cv2.waitKey()
+
+        # draw the clusters on a frame and then write them.
+        if FLAGS.out_dir is not None:
+            corner_frame = frame.copy()
+            draw_corners_with_offset(corner_frame, clustering_corner_cam1, (255, 0, 0), 5, offsets[cam1_id], 3)
+            draw_corners_with_offset(corner_frame, clustering_corner_cam2, (0, 255, 0), 5, offsets[cam2_id], 3)
+            # cv2.imshow("frame", corner_frame)
+            # cv2.waitKey()
+            # cv2.destroyAllWindows()
+
         # cluster the corners
         rng = np.random.RandomState(123)
         seed = 123
-        num_clusters = 10
+        # num_clusters = 100
 
-        cluster_ids = cluster_corners(clustering_corner_cam1, num_clusters, seed)
-        flat_sampled, flat_sampled_idx, flat_cluster_ids = sample_corners(rng, imgpoints1, cluster_ids, num_clusters, num_samples=10)
+        cluster_ids, centroids = cluster_corners(clustering_corner_cam1, FLAGS.num_frames, seed)
+        flat_sampled, flat_sampled_idx, flat_cluster_ids = sample_corners(rng, clustering_corner_cam1, cluster_ids, FLAGS.num_frames, num_samples=1)
+        if FLAGS.out_dir is not None:
+            cluster_frame = frame.copy()
+            draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, cluster_ids, FLAGS.num_frames, offsets[cam1_id], offsets[cam2_id], 3)
+            #cv2.imshow("clusters", cluster_frame)
+
+            centroid_frame = corner_frame.copy()
+            draw_corners_with_offset(centroid_frame, centroids, (0, 0, 255), 5, offsets[cam1_id])
+            #cv2.imshow("centroids", centroid_frame)
+
+            # draw sampled corners.
+            #draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
+            # for debug purposes, grab the first corner of each imgpoint for plotting
+            #debug_corners1 = []
+            # for i_debug in range(len(flat_sampled)):
+            #     debug_corners1.append(flat_sampled[i_debug])
+            #debug_corners1 = np.vstack(debug_corners1)
+            debug_corners1 = flat_sampled
+            #import pdb; pdb.set_trace()
+            #draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, 0, markerType=cv2.MARKER_STAR)
+            #draw_corners_with_offset(cluster_frame, clustering_corner_cam2[flat_sampled_idx], (255, 0, 0), 10, offsets[1], markerType=cv2.MARKER_STAR)
+            #draw_paired_clusters(rng, cluster_frame, debug_corners1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
+            temp_imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
+            temp_imgpoints2 = calibrate_cameras.index_list(imgpoints2, flat_sampled_idx)
+            debug_corners1 = []
+            debug_corners2 = []
+            for i_debug in range(len(flat_sampled)):
+                debug_corners1.append(temp_imgpoints1[i_debug][0])
+                debug_corners2.append(temp_imgpoints2[i_debug][0])
+            debug_corners1 = np.vstack(debug_corners1)
+            debug_corners2 = np.vstack(debug_corners2)
+            draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, offsets[cam1_id], markerType=cv2.MARKER_STAR)
+            draw_corners_with_offset(cluster_frame, debug_corners2, (255, 0, 0), 10, offsets[cam2_id], markerType=cv2.MARKER_STAR)
+            #import pdb;pdb.set_trace()
+            #cv2.imshow("sampled", cluster_frame)
+            #cv2.waitKey()
+            #cv2.destroyAllWindows()
         #import pdb; pdb.set_trace()
 
         # do a sampling here...
         imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
         imgpoints2 = calibrate_cameras.index_list(imgpoints2, flat_sampled_idx)
         objpoints = cam1_frames.setup_obj_points()
-        objpoints = objpoints[:100]
+        objpoints = objpoints[:len(imgpoints1)]
         frame_idx = calibrate_cameras.index_list(frame_idx, flat_sampled_idx)
         write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
 
@@ -226,25 +307,20 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         mtx2 = cam2["mtx"] 
         dist2 = cam2["dist"]
 
-        # matlab has the order flipped... so we gotta do that here
-        # ret, _, _, _, _, R, T, E, F = cv2.stereoCalibrate(
-        #     objpoints, imgpoints2, imgpoints1, mtx2, dist2, mtx1, dist1, (512, 512), criteria=criteria,
-        #     flags=cv2.CALIB_FIX_INTRINSIC)
+        start_time = time.time()
         ret, _, _, _, _, R, T, E, F = cv2.stereoCalibrate(
             objpoints, imgpoints1, imgpoints2, mtx1, dist1, mtx2, dist2, (512, 512), criteria=criteria,
             flags=cv2.CALIB_FIX_INTRINSIC)
         print("error: {}".format(ret))
+        print("Time taken: {}".format(time.time() - start_time))
 
-        ret, _, _, _, _, R_test, T_test, E_test, F_test = cv2.stereoCalibrate(
-            objpoints, imgpoints2, imgpoints1, mtx2, dist2, mtx1, dist1, (512, 512), criteria=criteria,
-            flags=cv2.CALIB_FIX_INTRINSIC)
+        # ret, _, _, _, _, R_test, T_test, E_test, F_test = cv2.stereoCalibrate(
+        #     objpoints, imgpoints2, imgpoints1, mtx2, dist2, mtx1, dist1, (512, 512), criteria=criteria,
+        #     flags=cv2.CALIB_FIX_INTRINSIC)
 
         # reproject and check errors
         RT1 = np.concatenate([np.eye(3), [[0],[0],[0]]], axis = -1)
         RT2 = np.concatenate([R, T], axis = -1)
-        # RT1 = np.concatenate([R, T], axis = -1)
-        # RT2 = np.concatenate([np.eye(3), [[0],[0],[0]]], axis = -1)
-
 
         proj_mat1 = mtx1 @ RT1
         proj_mat2 = mtx2 @ RT2
@@ -261,16 +337,14 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             mean_error += error
             write_stereo_reprojection(cap, imgpoints1[i], imgpoints_reproj, frame_idx[i], offsets[cam1_id], cam1_id, cam2_id)
 
-            #imgpoints_reproj2, _ = cv2.projectPoints(cam1_ref_points, np.eye(3), np.zeros((3,1)), mtx2, dist2)
             imgpoints_reproj2, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx2, dist2)
-
-            # manual change of frame of reference to test...
-            cam2_ref_points = (R @ cam1_ref_points.T + T).T
-            test_points, _ = cv2.projectPoints(cam2_ref_points, np.eye(3), np.zeros((3,1)), mtx2, dist2)
-            test_points = test_points.astype('float32')
-            test_error = cv2.norm(test_points, imgpoints_reproj2, cv2.NORM_L2)/len(imgpoints_reproj)
-
             # write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id)
+
+            # # manual change of frame of reference to test...
+            # cam2_ref_points = (R @ cam1_ref_points.T + T).T
+            # test_points, _ = cv2.projectPoints(cam2_ref_points, np.eye(3), np.zeros((3,1)), mtx2, dist2)
+            # test_points = test_points.astype('float32')
+            # test_error = cv2.norm(test_points, imgpoints_reproj2, cv2.NORM_L2)/len(imgpoints_reproj)
 
         print( "total error: {}".format(mean_error/len(objpoints)) )
 
@@ -279,8 +353,6 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         # {'om' 'T' 'R' 'active_images_left' 'recompute_intrinsic_right'}
         om = cv2.Rodrigues(R)
         om = om[0]
-        om_test = cv2.Rodrigues(R_test)
-        om_test = om_test[0]
         #import pdb; pdb.set_trace()
         out_dict = {
             "calib_name_left": "cam_{}".format(cam2_id),

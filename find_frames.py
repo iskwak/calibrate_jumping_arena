@@ -12,6 +12,7 @@ flags.DEFINE_string("video", None, "Calibration Video")
 flags.DEFINE_string("outvideo", None, "Output video name")
 flags.DEFINE_string("outpickle", None, "Base pickle name for data.")
 flags.DEFINE_boolean("show_plot", False, "Shows plots of detections.")
+flags.DEFINE_boolean("debug", False, "Detect corners in a subset of the frames, to speed up the process")
 
 flags.mark_flag_as_required("video")
 #flags.mark_flag_as_required("outvideo")
@@ -30,7 +31,7 @@ def find_corners(calib_frames, frame, gray, frame_num):
 
     ret, corners = cv2.findChessboardCorners(gray, calib_frames.squares_xy, None)
     if ret == True:
-        corners2 = cv2.cornerSubPix(gray, corners, (3, 3), (-1,-1), criteria)
+        corners2 = cv2.cornerSubPix(gray, corners, (5, 5), (-1,-1), criteria)
         # calib_frames.corners.append(corners)
         # calib_frames.corners2.append(corners2)
         # calib_frames.frame_number.append(frame_num)
@@ -62,6 +63,10 @@ def main(argv):
     frame_num = 0
     while cap.isOpened():
         ret, frame = cap.read()
+        if FLAGS.debug is True and (frame_num %  10) != 0:
+            frame_num = frame_num + 1
+            continue
+
         if ret == True:
 
             color_left = frame[:, 0:width, :]
@@ -99,6 +104,10 @@ def main(argv):
     if FLAGS.outvideo is not None:
         writer.release()
 
+    print("Num found frames: {}, {}, {}".format(
+        len(camera_calib_frames[0].frame_numbers),
+        len(camera_calib_frames[1].frame_numbers),
+        len(camera_calib_frames[2].frame_numbers)))
     with open(FLAGS.outpickle, "wb") as fid:
         pickle.dump(camera_calib_frames, fid)
 
