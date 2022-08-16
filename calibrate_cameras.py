@@ -72,6 +72,7 @@ def draw_clusters(rng, frame, all_corners, all_cluster_idx, num_clusters, offset
 
 def sample_corners(rng, all_corners, all_cluster_idx, num_clusters):
     # for each set of corners, and each cluster, grab 1 points.
+    num_samples = 10
     all_sampled = []
     all_sampled_idxs = []
     all_cluster_ids = []
@@ -92,15 +93,25 @@ def sample_corners(rng, all_corners, all_cluster_idx, num_clusters):
             # documentation says it outputs an array
             clustered_indices = clustered_indices[0]
             rng.shuffle(clustered_indices) # in place operation
-            sampled_idxs.append(clustered_indices[0]) # take the first sample
+        #     sampled_idxs.append(clustered_indices[:10]) # take the first sample
 
-            # the sampled corner
-            sampled_corners.append(current_corners[clustered_indices[0]])
-            sampled_cluster_idx.append(j)
+        #     # the sampled corner
+        #     sampled_corners.append(current_corners[clustered_indices[0]])
+        #     sampled_cluster_idx.append(j)
 
-        all_sampled.append(sampled_corners)
-        all_cluster_ids.append(sampled_cluster_idx)
-        all_sampled_idxs.append(sampled_idxs)
+        # all_sampled.append(sampled_corners)
+        # all_cluster_ids.append(sampled_cluster_idx)
+        # all_sampled_idxs.append(sampled_idxs)
+            sampled_idxs.append(clustered_indices[:num_samples])
+            sampled = current_corners[clustered_indices[:num_samples]]
+            sampled_corners.append(sampled)
+            sampled_cluster_idx.append([j] * num_samples)
+
+        all_sampled.append(np.concatenate(sampled_corners, axis=0))
+        flat_cluster_ids = [x for xs in sampled_cluster_idx for x in xs]
+        all_cluster_ids.append(flat_cluster_ids)
+        flat_sampled_idx = [x for xs in sampled_idxs for x in xs]
+        all_sampled_idxs.append(flat_sampled_idx)
 
     return all_sampled, all_sampled_idxs, all_cluster_ids
 
@@ -200,7 +211,7 @@ def main(argv):
     rng = np.random.RandomState(123)
     seed = 123
     # num_clusters = 10
-    all_cluster_idx = cluster_corners(all_corners, FLAGS.num_frames, seed)
+    all_cluster_idx = cluster_corners(all_corners, 20, seed)
     
     # draw the clusters
     if FLAGS.out_dir is not None and FLAGS.input_video is not None:
@@ -212,7 +223,7 @@ def main(argv):
         # cv2.waitKey()
 
     # for each cluster, sample 1 checker boards to use for calibration
-    all_sampled, all_sampled_idxs, all_cluster_ids = sample_corners(rng, all_corners, all_cluster_idx, FLAGS.num_frames)
+    all_sampled, all_sampled_idxs, all_cluster_ids = sample_corners(rng, all_corners, all_cluster_idx, 20)
 
     # draw the sampled clusters
     if FLAGS.out_dir is not None and FLAGS.input_video is not None:
@@ -232,7 +243,7 @@ def main(argv):
         imgpoints = index_list(curr_frames.corners2, all_sampled_idxs[i])
         frame_idx = index_list(curr_frames.frame_numbers, all_sampled_idxs[i])
         objpoints = curr_frames.setup_obj_points()
-        objpoints = objpoints[:FLAGS.num_frames]
+        objpoints = objpoints[:len(imgpoints)]
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (512, 512), None, None)
 
         calibrated_cam_data.append({

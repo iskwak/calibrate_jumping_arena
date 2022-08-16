@@ -12,6 +12,7 @@ import scipy.io
 from scipy.cluster.vq import kmeans,vq,whiten
 import random
 import calibrate_cameras
+import os
 
 FLAGS = flags.FLAGS
 # flags.DEFINE_string("calib_frames", None, "Calibration frames data.")
@@ -202,6 +203,9 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     offsets = [0, width, 2 * width]
     ret, frame = cap.read()
 
+    os.makedirs("{}/paired".format(FLAGS.out_dir), exist_ok=True)
+    os.makedirs("{}/stereo_reprojections".format(FLAGS.out_dir), exist_ok=True)
+
     all_corners = calibrate_cameras.get_corners(frame, calib_frames, offsets, True)
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 1000, 0.0001)
@@ -244,10 +248,10 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             corner_frame = frame.copy()
             draw_corners_with_offset(corner_frame, clustering_corner_cam1, (255, 0, 0), 5, offsets[cam1_id], 3)
             draw_corners_with_offset(corner_frame, clustering_corner_cam2, (0, 255, 0), 5, offsets[cam2_id], 3)
+            cv2.imwrite("{}/overlapping_frames_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), corner_frame)
             # cv2.imshow("frame", corner_frame)
             # cv2.waitKey()
             # cv2.destroyAllWindows()
-
         # cluster the corners
         rng = np.random.RandomState(123)
         seed = 123
@@ -258,10 +262,12 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         if FLAGS.out_dir is not None:
             cluster_frame = frame.copy()
             draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, cluster_ids, FLAGS.num_frames, offsets[cam1_id], offsets[cam2_id], 3)
+            cv2.imwrite("{}/clusters_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
             #cv2.imshow("clusters", cluster_frame)
 
             centroid_frame = corner_frame.copy()
             draw_corners_with_offset(centroid_frame, centroids, (0, 0, 255), 5, offsets[cam1_id])
+            cv2.imwrite("{}/centroids_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), centroid_frame)
             #cv2.imshow("centroids", centroid_frame)
 
             # draw sampled corners.
@@ -287,6 +293,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             debug_corners2 = np.vstack(debug_corners2)
             draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, offsets[cam1_id], markerType=cv2.MARKER_STAR)
             draw_corners_with_offset(cluster_frame, debug_corners2, (255, 0, 0), 10, offsets[cam2_id], markerType=cv2.MARKER_STAR)
+            cv2.imwrite("{}/sampled_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
             #import pdb;pdb.set_trace()
             #cv2.imshow("sampled", cluster_frame)
             #cv2.waitKey()
@@ -378,7 +385,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             "recompute_intrinsic_left": 1
         }
 
-        scipy.io.savemat("cam_{}{}_opencv.mat".format(cam1_id, cam2_id), out_dict)
+        scipy.io.savemat("{}/cam_{}{}_opencv.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict)
 
     cap.release()
 

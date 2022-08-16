@@ -1,4 +1,11 @@
-calib_filenames = {'cam_01_opencv.mat', 'cam_02_opencv.mat', 'cam_02_opencv.mat'};
-outname = 'multi_cam_calib.mat';
+%base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726/';
+base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726_bigvideo';
+
+calib_filenames = { ...
+    fullfile(base_out, 'cam_01_opencv.mat'), ...
+    fullfile(base_out, 'cam_02_opencv.mat'), ...
+    fullfile(base_out, 'cam_12_opencv.mat') ...
+};
+outname = fullfile(base_out, 'multi_cam_calib.mat');
 
 create_calrignpairwise(outname, calib_filenames);

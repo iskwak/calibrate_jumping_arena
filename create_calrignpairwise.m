@@ -7,6 +7,9 @@ function create_calrignpairwise(outname, calib_filenames)
     for i = 1:length(calib_filenames)
         calib_mats{i} = CalRig2CamCaltech(calib_filenames{i});
     end
+    calib_mats{1} = CalRig2CamCaltech(calib_filenames{1});
+    calib_mats{2} = CalRig2CamCaltech(calib_filenames{2});
+    calib_mats{3} = CalRig2CamCaltech(calib_filenames{3});
 
     % create a struct to used for input to the CalRigNPairwiseCalibrated
     % constructor
