@@ -389,9 +389,6 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     cap.release()
 
 
-
-
-
 def main(argv):
     del argv
 
