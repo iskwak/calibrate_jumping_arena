@@ -92,7 +92,7 @@ def main(argv):
                 cur_calib.corners2[i] = reordered
 
             if write_video == True:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num - 1)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
                 ret, frame = cap.read()
                 if ret == True:
                     if FLAGS.crop == True:

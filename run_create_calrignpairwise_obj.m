@@ -1,5 +1,6 @@
 %base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726/';
-base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726_bigvideo';
+%base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726_bigvideo';
+base_out = '/groups/branson/bransonlab/kwaki/ForceData/avian3dstuff/calibration/20220726_bigvideo_test';
 
 calib_filenames = { ...
     fullfile(base_out, 'cam_01_opencv.mat'), ...

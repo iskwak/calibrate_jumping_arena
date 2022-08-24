@@ -130,7 +130,7 @@ def draw_corners(image, corners, color, markerSize):
 
 
 def draw_reprojection(cap, squares_xy, imgpoints, imgpoints2, frame_idx):
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx - 1)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
 
     mins = imgpoints.min(axis=0).squeeze().astype('int')

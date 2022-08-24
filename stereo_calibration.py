@@ -53,7 +53,7 @@ def get_all_overlapping_frames(calib_frames):
 
 
 def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam1_id, cam2_id):
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx - 1)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
 
     mins = imgpoints.min(axis=0).squeeze().astype('int')
@@ -96,7 +96,7 @@ def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam
 
 
 def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2, cam1_id, cam2_id):
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx - 1)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
 
     # adjust the corners
@@ -231,7 +231,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         # # debug, loop over and plot the corners
         # for i_frame in range(len(frame_idx)):
         #     current_frame_idx = frame_idx[i_frame]
-        #     cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_idx - 1)
+        #     cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_idx)
         #     ret, current_frame = cap.read()
 
         #     #import pdb; pdb.set_trace()
@@ -384,7 +384,6 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             "recompute_intrinsic_right": 1,
             "recompute_intrinsic_left": 1
         }
-
         scipy.io.savemat("{}/cam_{}{}_opencv.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict)
 
     cap.release()

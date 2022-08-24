@@ -35,7 +35,7 @@ def main(argv):
             top = current_calib_frames.corners2[i][0][0][1]
             if bottom > top:
                 frame_num = current_calib_frames.frame_numbers[i]
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num -1)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
                 res, frame = cap.read()
                 # cv2.imshow("Original", frame)
 
