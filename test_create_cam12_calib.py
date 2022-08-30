@@ -37,8 +37,8 @@ def draw_stereo_reprojection(frame, imgpoints, imgpoints2, offset, cam1_id, cam2
 
     corners = imgpoints.squeeze()
     calibrate_cameras.draw_corners(frame, corners, (255, 0, 255), 5)
-    # corners = imgpoints2.squeeze()
-    #calibrate_cameras.draw_corners(frame, corners, (0, 255, 255), 5)
+    corners = imgpoints2.squeeze()
+    calibrate_cameras.draw_corners(frame, corners, (0, 255, 255), 5)
     # adjust the corners
     # mins[0] = mins[0] + offset
     # maxs[0] = maxs[0] + offset
@@ -156,7 +156,7 @@ def main(argv):
                 new_frame =  draw_stereo_reprojection(frame, imgpoints0, imgpoints_reproj, offsets[cam0_id], cam0_id, cam1_id)
                 cv2.imshow("moo", new_frame)
                 cv2.waitKey()
-                #import pdb; pdb.set_trace()
+
     print("total error: {}".format(mean_error/num_overlapping))
     # print("total error: {}".format(mean_error)
 
