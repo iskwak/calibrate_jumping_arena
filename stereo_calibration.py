@@ -206,10 +206,11 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     os.makedirs("{}/paired".format(FLAGS.out_dir), exist_ok=True)
     os.makedirs("{}/stereo_reprojections".format(FLAGS.out_dir), exist_ok=True)
 
+    # terribly named function... this is not all the corners of the targets. this is getting
+    # only the top left corner of the target, for all targets.
     all_corners = calibrate_cameras.get_corners(frame, calib_frames, offsets, True)
-
+    all_overlapping_sampled_idx = []
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 1000, 0.0001)
-    all_calibs = []
     for overlapping_frames in all_overlapping_frames:
         cam1_id = overlapping_frames["view1"]
         cam2_id = overlapping_frames["view2"]
@@ -234,7 +235,6 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         #     cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame_idx)
         #     ret, current_frame = cap.read()
 
-        #     #import pdb; pdb.set_trace()
         #     draw_corners_with_offset(current_frame, imgpoints1[i_frame].squeeze(), (255, 0, 0), 5, offsets[cam1_id])
         #     draw_corners_with_offset(current_frame, imgpoints2[i_frame].squeeze(), (0, 255, 0), 5, offsets[cam2_id])
 
@@ -259,6 +259,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
 
         cluster_ids, centroids = cluster_corners(clustering_corner_cam1, FLAGS.num_frames, seed)
         flat_sampled, flat_sampled_idx, flat_cluster_ids = sample_corners(rng, clustering_corner_cam1, cluster_ids, FLAGS.num_frames, num_samples=1)
+        all_overlapping_sampled_idx.append(flat_sampled_idx)
         if FLAGS.out_dir is not None:
             cluster_frame = frame.copy()
             draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, cluster_ids, FLAGS.num_frames, offsets[cam1_id], offsets[cam2_id], 3)
@@ -278,7 +279,6 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             #     debug_corners1.append(flat_sampled[i_debug])
             #debug_corners1 = np.vstack(debug_corners1)
             debug_corners1 = flat_sampled
-            #import pdb; pdb.set_trace()
             #draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, 0, markerType=cv2.MARKER_STAR)
             #draw_corners_with_offset(cluster_frame, clustering_corner_cam2[flat_sampled_idx], (255, 0, 0), 10, offsets[1], markerType=cv2.MARKER_STAR)
             #draw_paired_clusters(rng, cluster_frame, debug_corners1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
@@ -294,11 +294,9 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, offsets[cam1_id], markerType=cv2.MARKER_STAR)
             draw_corners_with_offset(cluster_frame, debug_corners2, (255, 0, 0), 10, offsets[cam2_id], markerType=cv2.MARKER_STAR)
             cv2.imwrite("{}/sampled_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
-            #import pdb;pdb.set_trace()
             #cv2.imshow("sampled", cluster_frame)
             #cv2.waitKey()
             #cv2.destroyAllWindows()
-        #import pdb; pdb.set_trace()
 
         # do a sampling here...
         imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
@@ -307,6 +305,8 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         objpoints = objpoints[:len(imgpoints1)]
         frame_idx = calibrate_cameras.index_list(frame_idx, flat_sampled_idx)
         write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
+
+        #import pdb; pdb.set_trace()
 
         mtx1 = cam1["mtx"]
         dist1 = cam1["dist"]
@@ -345,6 +345,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             write_stereo_reprojection(cap, imgpoints1[i], imgpoints_reproj, frame_idx[i], offsets[cam1_id], cam1_id, cam2_id)
 
             imgpoints_reproj2, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx2, dist2)
+            import pdb; pdb.set_trace()
             # write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id)
 
             # # manual change of frame of reference to test...
@@ -360,10 +361,11 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         # {'om' 'T' 'R' 'active_images_left' 'recompute_intrinsic_right'}
         om = cv2.Rodrigues(R)
         om = om[0]
-        #import pdb; pdb.set_trace()
         out_dict = {
             "calib_name_left": "cam_{}".format(cam2_id),
             "calib_name_right": "cam_{}".format(cam1_id),
+            "cam0_id": cam1_id,
+            "cam1_id": cam2_id,
             "dX": 3,
             "nx": 512,
             "ny": 512,
@@ -385,6 +387,14 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             "recompute_intrinsic_left": 1
         }
         scipy.io.savemat("{}/cam_{}{}_opencv.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict)
+
+    overlapped_sampled_name = FLAGS.out_dir + "/overlapped_sampled.pkl"
+    overlapped_sampled = {
+        "overlapped": all_overlapping_frames,
+        "sampled_idx": all_overlapping_sampled_idx
+    }
+    with open(overlapped_sampled_name, "wb") as fid:
+        pickle.dump(overlapped_sampled, fid)
 
     cap.release()
 

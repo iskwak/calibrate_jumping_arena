@@ -151,7 +151,7 @@ def main(argv):
             error1 = cv2.norm(imgpoints1, imgpoints_reproj1, cv2.NORM_L2)/len(imgpoints_reproj)
             mean_error += error1
 
-            if error0 > 0:
+            if error0 < 0.3:
                 print("error: {}".format(error0))
                 new_frame =  draw_stereo_reprojection(frame, imgpoints0, imgpoints_reproj, offsets[cam0_id], cam0_id, cam1_id)
                 cv2.imshow("moo", new_frame)
