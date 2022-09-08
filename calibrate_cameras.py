@@ -129,7 +129,7 @@ def draw_corners(image, corners, color, markerSize):
             markerType=cv2.MARKER_CROSS, markerSize=markerSize)
 
 
-def draw_reprojection(cap, squares_xy, imgpoints, imgpoints2, frame_idx):
+def plot_reprojection(cap, outname, squares_xy, imgpoints, imgpoints2, frame_idx, offset=0):
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
 
@@ -144,10 +144,11 @@ def draw_reprojection(cap, squares_xy, imgpoints, imgpoints2, frame_idx):
     maxs = mins + 180
 
     # adjust the corners
-    frame = frame[mins[1]:maxs[1], mins[0]:maxs[0]]
-
+    frame = frame.copy()
+    frame = frame[mins[1]:maxs[1], mins[0]+offset:maxs[0]+offset]
     # need to flip the corners
-    frame_reproj = frame.copy()
+    imgpoints = imgpoints.copy()
+    imgpoints2 = imgpoints2.copy()
 
     imgpoints[:, 0, 0] = imgpoints[:, 0, 0] - mins[0]
     imgpoints[:, 0, 1] = imgpoints[:, 0, 1] - mins[1]
@@ -160,15 +161,22 @@ def draw_reprojection(cap, squares_xy, imgpoints, imgpoints2, frame_idx):
     #     (20, 20),
     #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (209, 80, 0, 255), 1)
     corners = imgpoints.squeeze()
-    draw_corners(frame, corners, (255, 0, 255), 5)
-    corners = imgpoints2.squeeze()
-    draw_corners(frame, corners, (0, 255, 255), 5)
+    #draw_corners(frame, corners, (255, 0, 255), 5)
+    corners2 = imgpoints2.squeeze()
+    #draw_corners(frame, corners, (0, 255, 255), 5)
+    color_id = np.arange(corners.shape[0])
+
+    plt.imshow(frame)
+    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
+    plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
+    plt.savefig(outname)
+    #plt.show()
+    plt.close()
 
     # cv2.imshow("frame", frame)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
     #cv2.imwrite("reprojections/{}.png".format(frame_idx), frame)
-    return frame
 
 
 def main(argv):
@@ -253,17 +261,33 @@ def main(argv):
             "tvecs": tvecs
         })
         mean_error = 0
+        mean_pixel_error = 0
+        worst_error = 0
+        worst_error_idx = 0
+        all_reprojections = []
         for j in range(len(objpoints)):
             imgpoints2, _ = cv2.projectPoints(objpoints[j], rvecs[j], tvecs[j], mtx, dist)
+            all_reprojections.append(imgpoints2)
             error = cv2.norm(imgpoints[j], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
-            mean_error += error
-            if i == 0 and FLAGS.out_dir is not None and FLAGS.input_video is not None:
-                # write the frames to disk
-                frame = draw_reprojection(cap, curr_frames.squares_xy, imgpoints[j], imgpoints2, frame_idx[j])
-                outname = FLAGS.out_dir + "/reproj_{}.png".format(frame_idx[j])
-                cv2.imwrite(outname, frame)
+            error_pixel = np.sqrt(np.sum(np.square(imgpoints[j].squeeze() - imgpoints2.squeeze()), axis=1)).sum() / len(imgpoints2)
 
-        print( "total error: {}".format(mean_error/len(objpoints)) )
+            if error > worst_error:
+                worst_error = error
+                worst_error_idx = j
+            mean_error += error
+            mean_pixel_error += error_pixel
+            if FLAGS.out_dir is not None and FLAGS.input_video is not None:
+                # write the frames to disk
+                outname = FLAGS.out_dir + "/cam_{}_error_{}_reproj_{}.png".format(i, error, frame_idx[j])
+                plot_reprojection(cap, outname, curr_frames.squares_xy, imgpoints[j], imgpoints2, frame_idx[j], offsets[i])
+ 
+        if FLAGS.out_dir is not None and FLAGS.input_video is not None:
+            outname = FLAGS.out_dir + "/worst_cam_{}_error_{}_frame_{}.png".format(i, worst_error, frame_idx[worst_error_idx], offsets[i])
+            plot_reprojection(cap, outname, curr_frames.squares_xy, imgpoints[worst_error_idx],
+                all_reprojections[worst_error_idx], frame_idx[worst_error_idx], offsets[i])
+
+        print( "total mean error: {}".format(mean_error/len(objpoints)) )
+        print( "total pixel mean error: {}".format(mean_pixel_error/len(objpoints)) )
 
     all_calib_data = {
         "calibrated": calibrated_cam_data,
@@ -273,7 +297,7 @@ def main(argv):
     with open(FLAGS.calibrated_name, "wb") as fid:
         pickle.dump(all_calib_data, fid)
 
-    if FLAGS.input_video is not None:    
+    if FLAGS.input_video is not None:
         cap.release()
     cv2.destroyAllWindows()
 

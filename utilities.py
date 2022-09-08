@@ -65,3 +65,77 @@ def index_list(main_list, index_list):
     for i in index_list:
         temp.append(main_list[i])
     return temp
+
+
+def plot_write_cropped_corners(frame, outname, corners, offset=0, figure=None):
+    mins = corners.min(axis=0).squeeze().astype('int')
+    maxs = corners.max(axis=0).squeeze().astype('int')
+
+    mins = mins - 60
+    if mins[0] < 0:
+        mins[0] = 0
+    if mins[1] < 0:
+        mins[1] = 0
+    maxs = mins + 180
+
+    frame = frame.copy()
+    frame = frame[mins[1]:maxs[1], mins[0]+offset:maxs[0]+offset]
+
+    corners = corners.copy()
+    corners[:, 0, 0] = corners[:, 0, 0] - mins[0]
+    corners[:, 0, 1] = corners[:, 0, 1] - mins[1]
+
+    color_id = np.arange(corners.shape[0])
+    plt.imshow(frame)
+    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
+    plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
+    plt.savefig(outname)
+    #plt.show()
+    plt.close()
+
+
+# def plot_write_corners(frame, outname, corners, offset=0):
+#     mins1 = corners1.min(axis=0).squeeze().astype('int')
+#     maxs1 = corners1.max(axis=0).squeeze().astype('int')
+
+#     mins = mins - 60
+#     if mins[0] < 0:
+#         mins[0] = 0
+#     if mins[1] < 0:
+#         mins[1] = 0
+#     maxs = mins + 180
+
+#     # adjust the corners
+#     frame = frame.copy()
+#     frame = frame[mins[1]:maxs[1], mins[0]+offset:maxs[0]+offset]
+#     # need to flip the corners
+#     imgpoints = imgpoints.copy()
+#     imgpoints2 = imgpoints2.copy()
+
+#     imgpoints[:, 0, 0] = imgpoints[:, 0, 0] - mins[0]
+#     imgpoints[:, 0, 1] = imgpoints[:, 0, 1] - mins[1]
+#     imgpoints2[:, 0, 0] = imgpoints2[:, 0, 0] - mins[0]
+#     imgpoints2[:, 0, 1] = imgpoints2[:, 0, 1] - mins[1]
+#     # cv2.drawChessboardCorners(frame, squares_xy, imgpoints, True)
+#     # draw_corner_numbers(frame_flipped, reordered)
+#     # # mark the frame number on a flipped example
+#     # cv2.putText(frame_flipped, "{}: {}".format(i, frame_num),
+#     #     (20, 20),
+#     #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (209, 80, 0, 255), 1)
+#     corners = imgpoints.squeeze()
+#     #draw_corners(frame, corners, (255, 0, 255), 5)
+#     corners2 = imgpoints2.squeeze()
+#     #draw_corners(frame, corners, (0, 255, 255), 5)
+#     color_id = np.arange(corners.shape[0])
+
+#     plt.imshow(frame)
+#     plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
+#     plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
+#     plt.savefig(outname)
+#     #plt.show()
+#     plt.close()
+
+#     # cv2.imshow("frame", frame)
+#     # cv2.waitKey()
+#     # cv2.destroyAllWindows()
+#     #cv2.imwrite("reprojections/{}.png".format(frame_idx), frame)
