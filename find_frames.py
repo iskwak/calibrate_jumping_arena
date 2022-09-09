@@ -6,23 +6,20 @@ from absl import app
 from absl import flags
 import pickle
 from calibrationdata import CalibrationFrames
+import shared_flags
+import utilities
+
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("video", None, "Calibration Video")
-flags.DEFINE_string("outvideo", None, "Output video name")
-flags.DEFINE_string("outpickle", None, "Base pickle name for data.")
-flags.DEFINE_boolean("show_plot", False, "Shows plots of detections.")
-flags.DEFINE_boolean("debug", False, "Detect corners in a subset of the frames, to speed up the process")
+# flags.DEFINE_string("video", None, "Calibration Video")
+flags.DEFINE_string("detection_video", None, "Video showing the detections")
+# flags.DEFINE_string("outpickle", None, "Base pickle name for data.")
+# flags.DEFINE_boolean("show_plot", False, "Shows plots of detections.")
+# flags.DEFINE_boolean("debug", False, "Detect corners in a subset of the frames, to speed up the process")
 
-flags.mark_flag_as_required("video")
-#flags.mark_flag_as_required("outvideo")
-flags.mark_flag_as_required("outpickle")
+flags.mark_flag_as_required("calib_video")
+flags.mark_flag_as_required("detected_frames")
 
-
-def plot_corners(img, corners, corners2):
-    plt.plot(corners[:, 0, 0], corners[:, 0, 1])
-    plt.plot(corners[0, 0, 0], corners[0, 0, 1], color='red', marker='x')
-    plt.show()
 
 
 def find_corners(calib_frames, frame, gray, frame_num):
@@ -56,7 +53,7 @@ def main(argv):
         CalibrationFrames("center", FLAGS.video, (height, width))
     ]
 
-    if FLAGS.outvideo is not None:
+    if FLAGS.detection_video is not None:
         fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
         writer = cv2.VideoWriter(FLAGS.outvideo, fourcc, fps, (full_width, height))
 
@@ -87,13 +84,13 @@ def main(argv):
                 full_frame = np.concatenate((color_left, color_right), axis=1)
                 full_frame = np.concatenate((full_frame, color_center), axis=1)
                 writer.write(full_frame)
-                if FLAGS.show_plot:
-                    cv2.imshow("Frame Left", color_left)
-                    cv2.imshow("Frame Right", color_right)
-                    cv2.imshow("Frame Center", color_center)
+                # if FLAGS.show_plot:
+                #     cv2.imshow("Frame Left", color_left)
+                #     cv2.imshow("Frame Right", color_right)
+                #     cv2.imshow("Frame Center", color_center)
 
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
+                #     if cv2.waitKey(1) & 0xFF == ord('q'):
+                #         break
         else:
             break
 
