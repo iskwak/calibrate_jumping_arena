@@ -1,3 +1,4 @@
+from cgi import test
 import numpy as np
 import cv2
 # import glob
@@ -16,10 +17,11 @@ flags.DEFINE_string("detection_video", None, "Video showing the detections")
 # flags.DEFINE_string("outpickle", None, "Base pickle name for data.")
 # flags.DEFINE_boolean("show_plot", False, "Shows plots of detections.")
 flags.DEFINE_boolean("debug", False, "Detect corners in a subset of the frames, to speed up the process")
+flags.DEFINE_string("test_file", None, "Filename for debug CheckerboardDetection obj pickle")
 
 flags.mark_flag_as_required("calib_video")
 flags.mark_flag_as_required("detected_frames")
-
+flags.mark_flag_as_required("test_file")
 
 
 def find_corners(calib_frames, frame, gray, frame_num):
@@ -53,16 +55,15 @@ def main(argv):
         CheckerboardDetectedFrames("center", FLAGS.calib_video, (height, width))
     ]
 
-    if FLAGS.detection_video is not None:
-        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-        writer = cv2.VideoWriter(FLAGS.detection_video, fourcc, fps, (full_width, height))
-
     frame_num = 0
     while cap.isOpened():
         ret, frame = cap.read()
-        if FLAGS.debug is True and frame_num > 500:
+        if frame_num < 500:
+            frame_num = frame_num + 1
+            continue
+        if frame_num >  1000:
             break
-        if FLAGS.debug is True and (frame_num % 10) != 0:
+        if (frame_num % 10) != 0:
             frame_num = frame_num + 1
             continue
 
@@ -82,17 +83,6 @@ def main(argv):
             find_corners(camera_calib_frames[1], color_right, gray_right, frame_num)
             find_corners(camera_calib_frames[2], color_center, gray_center, frame_num)
 
-            if FLAGS.detection_video is not None:
-                full_frame = np.concatenate((color_left, color_right), axis=1)
-                full_frame = np.concatenate((full_frame, color_center), axis=1)
-                writer.write(full_frame)
-                # if FLAGS.show_plot:
-                #     cv2.imshow("Frame Left", color_left)
-                #     cv2.imshow("Frame Right", color_right)
-                #     cv2.imshow("Frame Center", color_center)
-
-                #     if cv2.waitKey(1) & 0xFF == ord('q'):
-                #         break
         else:
             break
 
@@ -100,15 +90,49 @@ def main(argv):
 
     cap.release()
     cv2.destroyAllWindows()
-    if FLAGS.detection_video is not None:
-        writer.release()
 
     print("Num found frames: {}, {}, {}".format(
         len(camera_calib_frames[0].frame_numbers),
         len(camera_calib_frames[1].frame_numbers),
         len(camera_calib_frames[2].frame_numbers)))
-    # with open(FLAGS.outpickle, "wb") as fid:
-    #     pickle.dump(camera_calib_frames, fid)
+
+    # test the serializtion here.
+
+    serialized = camera_calib_frames[0].serialize_data()
+    test_obj = CheckerboardDetectedFrames.from_data(serialized)
+
+    assert(test_obj.camera_name == camera_calib_frames[0].camera_name)
+    assert(test_obj.movie_name == camera_calib_frames[0].movie_name)
+    assert(test_obj.frame_size == camera_calib_frames[0].frame_size)
+    assert(test_obj.square_mm == camera_calib_frames[0].square_mm)
+    assert(test_obj.checkerboard_dims == camera_calib_frames[0].checkerboard_dims)
+    assert(len(test_obj.frame_numbers) == len(camera_calib_frames[0].frame_numbers))
+
+    for i in range(len(test_obj.frame_numbers)):
+        assert(test_obj.frame_numbers[i] == camera_calib_frames[0].frame_numbers[i])
+        assert(np.all(test_obj.corners[i] == camera_calib_frames[0].corners[i]))
+        assert(np.all(test_obj.corners2[i] == camera_calib_frames[0].corners2[i]))
+
+    # next try saving and loading
+    with open(FLAGS.test_file, "wb") as fid:
+        pickle.dump(vars(test_obj), fid)
+
+    with open(FLAGS.test_file, "rb") as fid:
+        reloaded_data = pickle.load(fid)
+
+    reloaded_obj = CheckerboardDetectedFrames.from_data(reloaded_data)
+
+    assert(test_obj.camera_name == reloaded_obj.camera_name)
+    assert(test_obj.movie_name == reloaded_obj.movie_name)
+    assert(test_obj.frame_size == reloaded_obj.frame_size)
+    assert(test_obj.square_mm == reloaded_obj.square_mm)
+    assert(test_obj.checkerboard_dims == reloaded_obj.checkerboard_dims)
+    assert(len(test_obj.frame_numbers) == len(reloaded_obj.frame_numbers))
+
+    for i in range(len(test_obj.frame_numbers)):
+        assert(test_obj.frame_numbers[i] == reloaded_obj.frame_numbers[i])
+        assert(np.all(test_obj.corners[i] == reloaded_obj.corners[i]))
+        assert(np.all(test_obj.corners2[i] == reloaded_obj.corners2[i]))
 
 
 if __name__ == "__main__":

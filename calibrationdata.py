@@ -3,15 +3,15 @@ import numpy as np
 
 class CheckerboardDetectedFrames:
 
-    def __init__(self, camera_name, movie_name, frame_size, square_mm=3, checkerboard_dims=(7, 6)):
+    def __init__(self, camera_name, movie_name, frame_size, square_mm=3, checkerboard_dims=(7, 6), corners=[], corners2=[], frame_numbers=[]):
         self._camera_name = camera_name
         self._movie_name = movie_name
         self._frame_size = frame_size # movie frame size
 
-        self._corners = [] # corner detector
-        self._corners2 = [] # refined corners
+        self._corners = corners # corner detector
+        self._corners2 = corners2 # refined corners
         #self._grid_points = []
-        self._frame_numbers = [] # frame numbers for the corners
+        self._frame_numbers = frame_numbers # frame numbers for the corners
         self._square_mm = square_mm # square edge length in mm
         self._checkerboard_dims = checkerboard_dims # dimensions of the checkboard
 
@@ -31,6 +31,18 @@ class CheckerboardDetectedFrames:
         self._frame_numbers.append(frame_num)
 
     @property
+    def camera_name(self):
+        return self._camera_name
+    
+    @property
+    def movie_name(self):
+        return self._movie_name
+
+    @property
+    def frame_size(self):
+        return self._frame_size
+
+    @property
     def corners(self):
         return self._corners
 
@@ -47,8 +59,12 @@ class CheckerboardDetectedFrames:
         return self._frame_numbers
 
     @property
-    def _checkerboard_dims(self):
+    def checkerboard_dims(self):
         return self._checkerboard_dims
+
+    @property
+    def square_mm(self):
+        return self._square_mm
 
     def __getitem__(self, index):
         return self._corners[index], self._corners2[index], self._frame_numbers[index]
@@ -57,14 +73,25 @@ class CheckerboardDetectedFrames:
         return len(self._frame_numbers)
 
     def __repr__(self):
-        return "Camera: {}\nMovie name: {}\nNumber of detected frames: {}\nCheckerboard Dims: {}\nSquare Edge Length: {}\n"
+        return "Camera: {}\nMovie name: {}\nNumber of detected frames: {}\nCheckerboard Dims: {}\nSquare Edge Length: {}\n".format(
+            self._camera_name, self._movie_name, len(self._frame_numbers), self._checkerboard_dims, self._square_mm
+        )
 
     def serialize_data(self):
-        data_dict = {
-            "_camera_name": self._camera_name,
-            "_movie_name": self._movie_name,
-            "_frame_size": self._frame_size,
-        }
+        return vars(self)
+
+    @classmethod
+    def from_data(cls, data_dict):
+        obj = CheckerboardDetectedFrames(
+            data_dict["_camera_name"],
+            data_dict["_movie_name"],
+            data_dict["_frame_size"],
+            square_mm=data_dict["_square_mm"], 
+            checkerboard_dims=data_dict["_checkerboard_dims"],
+            corners=data_dict["_corners"],
+            corners2=data_dict["_corners2"],
+            frame_numbers=data_dict["_frame_numbers"])
+        return obj
 
     #def load_data(self, data_dict):
 
