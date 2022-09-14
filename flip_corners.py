@@ -5,18 +5,15 @@ from matplotlib import pyplot as plt
 from absl import app
 from absl import flags
 import pickle
-from calibrationdata import CalibrationFrames
+from calibrationdata import CheckerboardDetectedFrames
 import time
+import shared_flags
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("calib_frames", None, "Filaname for calibration frame pickle.")
-flags.DEFINE_string("flipped_name", None, "Filename for fixed corner order.")
-flags.DEFINE_string("output_video", None, "Filename for video showing flipped corner order. If blank, no video will be written")
-flags.DEFINE_string("input_video", None, "Filename for original data video. If blank, no video will be written")
-flags.DEFINE_boolean("crop", False, "Crop the test video, to make it easier to see the detected corners.")
-
-flags.mark_flag_as_required("calib_frames")
-flags.mark_flag_as_required("flipped_name")
+flags.DEFINE_string("flipped_video", None, "Filename for video showing flipped corner order. If blank, no video will be written")
+flags.DEFINE_boolean("crop", False, "Crop the output video, can make it easier to follow.")
+flags.mark_flag_as_required("detected_frames")
+flags.mark_flag_as_required("flipped_frames")
 
 
 def reorder_corners(corners, square_rows, square_cols):
@@ -47,15 +44,18 @@ def draw_corner_numbers(image, corners, offset):
 def main(argv):
     del argv
 
-    with open(FLAGS.calib_frames, "rb") as fid:
-        calib_frames = pickle.load(fid)
+    with open(FLAGS.detected_frames, "rb") as fid:
+        calib_data = pickle.load(fid)
+        calib_frames = []
+        for i in range(len(calib_data)):
+            calib_frames.append(CheckerboardDetectedFrames.from_data(calib_data[i]))
 
     write_video = True
-    if FLAGS.output_video is None or FLAGS.input_video is None:
+    if FLAGS.flipped_video is None or FLAGS.calib_video is None:
         write_video = False
 
     if write_video == True:
-        cap = cv2.VideoCapture(FLAGS.input_video)
+        cap = cv2.VideoCapture(FLAGS.calib_video)
         full_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         width = int(full_width / 3)
@@ -65,13 +65,13 @@ def main(argv):
 
         fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
         if FLAGS.crop == True:
-            writer = cv2.VideoWriter(FLAGS.output_video, fourcc, fps, (180, 2 * 180))
+            writer = cv2.VideoWriter(FLAGS.flipped_video, fourcc, fps, (180, 2 * 180))
         else:
-            writer = cv2.VideoWriter(FLAGS.output_video, fourcc, fps, (full_width, 2 * height))
+            writer = cv2.VideoWriter(FLAGS.flipped_video, fourcc, fps, (full_width, 2 * height))
 
 
     # width, height
-    (num_cols, num_rows) = calib_frames[0].squares_xy
+    (num_cols, num_rows) = calib_frames[0].checkerboard_dims
     # go through the corners and flip them.
     # create an image to plot on.
     # for j in range(3):
@@ -136,8 +136,27 @@ def main(argv):
         cap.release()
     
     # write the new corners to disk
-    with open(FLAGS.flipped_name, 'wb') as flipped_pickle:
-        pickle.dump(calib_frames, flipped_pickle)
+    with open(FLAGS.flipped_frames, "wb") as fid:
+        calib_data = []
+        for i in range(len(calib_frames)):
+            calib_data.append(calib_frames[i].serialize_data())
+        pickle.dump(calib_data, fid)
+
+    # with open(FLAGS.flipped_frames, "rb") as fid:
+    #     all_calib_data = pickle.load(fid)
+    #     for i in range(len(calib_frames)):
+    #         test_obj = CheckerboardDetectedFrames.from_data(all_calib_data[i])
+    #         assert(test_obj.camera_name == calib_frames[i].camera_name)
+    #         assert(test_obj.movie_name == calib_frames[i].movie_name)
+    #         assert(test_obj.frame_size == calib_frames[i].frame_size)
+    #         assert(test_obj.square_mm == calib_frames[i].square_mm)
+    #         assert(test_obj.checkerboard_dims == calib_frames[i].checkerboard_dims)
+    #         assert(len(test_obj.frame_numbers) == len(calib_frames[i].frame_numbers))
+    #         for j in range(len(test_obj.corners)):
+    #             assert(np.all(test_obj.corners[j] == calib_frames[i].corners[j]))
+    #             assert(np.all(test_obj.corners2[j] == calib_frames[i].corners2[j]))
+    #             assert(np.all(test_obj.frame_numbers[j] == calib_frames[i].frame_numbers[j]))
+
 
 if __name__ == "__main__":
     app.run(main)

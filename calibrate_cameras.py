@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from absl import app
 from absl import flags
 import pickle
-from calibrationdata import CalibrationFrames
+from calibrationdata import CheckerboardDetectedFrames
 import time
 import scipy
 from scipy.cluster.vq import kmeans,vq,whiten
@@ -13,11 +13,12 @@ import random
 import os
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("calib_frames", None, "Calibration frames data.")
-flags.DEFINE_string("calibrated_name", None, "Calibrated Camera Output File Name.")
-flags.DEFINE_string("input_video", None, "Input video, used to make example outputs.")
-flags.DEFINE_string("out_dir", None, "Output directory to save some debug outputs.")
+# flags.DEFINE_string("calib_frames", None, "Calibration frames data.")
+# flags.DEFINE_string("calibrated_name", None, "Calibrated Camera Output File Name.")
+# flags.DEFINE_string("input_video", None, "Input video, used to make example outputs.")
+# flags.DEFINE_string("out_dir", None, "Output directory to save some debug outputs.")
 flags.DEFINE_integer("num_frames", 100, "Number of frames to use for calibration.")
+flags.DEFINE_string("sampled_frames", None, "Frames sampled for single camera calibration.")
 
 
 def draw_corner(image, corner, offset, color, markerSize):
@@ -182,8 +183,11 @@ def plot_reprojection(cap, outname, squares_xy, imgpoints, imgpoints2, frame_idx
 def main(argv):
     del argv
 
-    with open(FLAGS.calib_frames, "rb") as fid:
-        calib_frames = pickle.load(fid)
+    with open(FLAGS.filtered_frames, "rb") as fid:
+        calib_data = pickle.load(fid)
+        calib_frames = []
+        for i in range(len(calib_data)):
+            calib_frames.append(CheckerboardDetectedFrames.from_data(calib_data[i]))
 
     if FLAGS.input_video is not None:
         cap = cv2.VideoCapture(FLAGS.input_video)

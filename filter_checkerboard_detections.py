@@ -4,21 +4,16 @@ from matplotlib import pyplot as plt
 from absl import app
 from absl import flags
 import pickle
-from calibrationdata import CalibrationFrames
-import time
-# import scipy
-# import scipy.io
-# from scipy.cluster.vq import kmeans,vq,whiten
-# import random
-# import calibrate_cameras
+from calibrationdata import CheckerboardDetectedFrames
 import os
 import utilities
+import shared_flags
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("filtered_name", None, "name of the filtered checkerboards pickle")
-flags.DEFINE_string("flipped_name", None, "name of the flipped corners pickle")
-flags.DEFINE_string("calib_video", None, "name of the calibration video")
-flags.DEFINE_string("out_dir", None, "optional, output directory for target images")
+# flags.DEFINE_string("filtered_name", None, "name of the filtered checkerboards pickle")
+# flags.DEFINE_string("flipped_name", None, "name of the flipped corners pickle")
+# flags.DEFINE_string("calib_video", None, "name of the calibration video")
+# flags.DEFINE_string("out_dir", None, "optional, output directory for target images")
 flags.DEFINE_float("threshold", 8.0, "threshold for edge size")
 
 def write_corners(cap, frame_num, corners, offset):
@@ -69,27 +64,31 @@ def main(argv):
     fps = cap.get(cv2.CAP_PROP_FPS)
     offsets = [0, width, 2 * width]
 
-    with open(FLAGS.flipped_name , "rb") as fid:
-        calibration_frames = pickle.load(fid)
+    with open(FLAGS.flipped_frames, "rb") as fid:
+        calib_data = pickle.load(fid)
+        calib_frames = []
+        for i in range(len(calib_data)):
+            calib_frames.append(CheckerboardDetectedFrames.from_data(calib_data[i]))
 
     rng = np.random.RandomState(123)
 
-    if FLAGS.out_dir is not None:
-        os.makedirs(FLAGS.out_dir, exist_ok=True)
-        big_square_out = FLAGS.out_dir + "/big_squares"
-        small_square_out = FLAGS.out_dir + "/small_squares"
+    if FLAGS.output_dir is not None:
+        os.makedirs(FLAGS.output_dir, exist_ok=True)
+        big_square_out = FLAGS.output_dir + "/big_squares"
+        small_square_out = FLAGS.output_dir + "/small_squares"
         os.makedirs(big_square_out, exist_ok=True)
         os.makedirs(small_square_out, exist_ok=True)
 
     # may want to different types of binning and saving, but first one, lets do two bins, greater than 10mm and less
     # than.
     filtered_frames = []
-    for i in range(len(calibration_frames)):
+    for i in range(len(calib_frames)):
         print("camera {}".format(i))
-        corners = calibration_frames[i].corners
-        corners2 = calibration_frames[i].corners2
-        frame_nums = calibration_frames[i].frame_numbers
-        filtered_frames.append(CalibrationFrames("camera {}".format(i), FLAGS.calib_video, (height, width)))
+        corners = calib_frames[i].corners
+        corners2 = calib_frames[i].corners2
+        frame_nums = calib_frames[i].frame_numbers
+
+        filtered_frames.append(CheckerboardDetectedFrames("camera {}".format(i), FLAGS.calib_video, (height, width)))
         big_square_idx = []
         small_square_idx = []
         for j in range(len(corners)):
@@ -102,21 +101,25 @@ def main(argv):
             else:
                 small_square_idx.append(j)
 
+
         # after going through all the corners for this camera. sample the big and small squares to get an idea of what
         # was filtered. Go for 10% or a max of 100 frames, whichever is smaller.
-        if FLAGS.out_dir is not None:
+        if FLAGS.output_dir is not None:
             rng.shuffle(big_square_idx) # shuffle is an in place operation
             rng.shuffle(small_square_idx)
 
-            write_sample_examples(big_square_out, cap, calibration_frames[i], big_square_idx, offsets[i], i)
-            write_sample_examples(small_square_out, cap, calibration_frames[i], small_square_idx, offsets[i], i)
+            write_sample_examples(big_square_out, cap, calib_frames[i], big_square_idx, offsets[i], i)
+            write_sample_examples(small_square_out, cap, calib_frames[i], small_square_idx, offsets[i], i)
             # frame = write_corners(cap, frame_nums[j], corners[j].squeeze(), offsets[i])
             # cv2.imshow("moo", frame)
             # cv2.waitKey()
             # cv2.destroyAllWindows()
 
-    with open(FLAGS.filtered_name, "wb") as fid:
-        pickle.dump(filtered_frames, fid)
+    with open(FLAGS.filtered_frames, "wb") as fid:
+        calib_data = []
+        for i in range(len(filtered_frames)):
+            calib_data.append(filtered_frames[i].serialize_data())
+        pickle.dump(calib_data, fid)
 
 
 if __name__ == "__main__":

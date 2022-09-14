@@ -60,7 +60,7 @@ def main(argv):
     frame_num = 0
     while cap.isOpened():
         ret, frame = cap.read()
-        if FLAGS.debug is True and frame_num > 500:
+        if FLAGS.debug is True and frame_num > 800:
             break
         if FLAGS.debug is True and (frame_num % 10) != 0:
             frame_num = frame_num + 1
@@ -107,8 +107,32 @@ def main(argv):
         len(camera_calib_frames[0].frame_numbers),
         len(camera_calib_frames[1].frame_numbers),
         len(camera_calib_frames[2].frame_numbers)))
-    # with open(FLAGS.outpickle, "wb") as fid:
-    #     pickle.dump(camera_calib_frames, fid)
+
+    # save the object contents to file
+    with open(FLAGS.detected_frames, "wb") as fid:
+        calib_data = []
+        for i in range(len(camera_calib_frames)):
+            calib_data.append(camera_calib_frames[i].serialize_data())
+        pickle.dump(calib_data, fid)
+
+    # debug, check the load
+    if FLAGS.debug is True:
+        with open(FLAGS.detected_frames, "rb") as fid:
+            all_calib_data = pickle.load(fid)
+            for i in range(len(camera_calib_frames)):
+                test_obj = CheckerboardDetectedFrames.from_data(all_calib_data[i])
+                print(test_obj.camera_name)
+                assert(test_obj.camera_name == camera_calib_frames[i].camera_name)
+                assert(test_obj.movie_name == camera_calib_frames[i].movie_name)
+                assert(test_obj.frame_size == camera_calib_frames[i].frame_size)
+                assert(test_obj.square_mm == camera_calib_frames[i].square_mm)
+                assert(test_obj.checkerboard_dims == camera_calib_frames[i].checkerboard_dims)
+                assert(len(test_obj.frame_numbers) == len(camera_calib_frames[i].frame_numbers))
+                assert(len(test_obj.corners) == len(camera_calib_frames[i].frame_numbers))
+                for j in range(len(test_obj.corners)):
+                    assert(np.all(test_obj.corners[j] == camera_calib_frames[i].corners[j]))
+                    assert(np.all(test_obj.corners2[j] == camera_calib_frames[i].corners2[j]))
+                    assert(np.all(test_obj.frame_numbers[j] == camera_calib_frames[i].frame_numbers[j]))
 
 
 if __name__ == "__main__":

@@ -91,11 +91,6 @@ def main(argv):
     cap.release()
     cv2.destroyAllWindows()
 
-    print("Num found frames: {}, {}, {}".format(
-        len(camera_calib_frames[0].frame_numbers),
-        len(camera_calib_frames[1].frame_numbers),
-        len(camera_calib_frames[2].frame_numbers)))
-
     # test the serializtion here.
 
     serialized = camera_calib_frames[0].serialize_data()
@@ -115,7 +110,8 @@ def main(argv):
 
     # next try saving and loading
     with open(FLAGS.test_file, "wb") as fid:
-        pickle.dump(vars(test_obj), fid)
+        #pickle.dump(vars(test_obj), fid)
+        pickle.dump(test_obj.serialize_data(), fid)
 
     with open(FLAGS.test_file, "rb") as fid:
         reloaded_data = pickle.load(fid)
@@ -134,6 +130,18 @@ def main(argv):
         assert(np.all(test_obj.corners[i] == reloaded_obj.corners[i]))
         assert(np.all(test_obj.corners2[i] == reloaded_obj.corners2[i]))
 
+    # the current usage model of the object is to fill it with all detections.
+    # then flip the detections (update the calibratoin detections)
+    #    for this one, lets just create a new object, and append to it.
+    # filter the detections/sampel them.
+    # run calibration on it
+    # sample the detections again and run stereo calibration
+    indexing = [0, 4, 6]
+    moo = test_obj.filter_data(indexing)
+    for i in range(len(indexing)):
+        assert(moo.frame_numbers[i] == test_obj.frame_numbers[indexing[i]])
+        assert(np.all(moo.corners[i] == test_obj.corners[indexing[i]]))
+        assert(np.all(moo.corners2[i] == test_obj.corners2[indexing[i]]))
 
 if __name__ == "__main__":
     app.run(main)

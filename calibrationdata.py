@@ -3,17 +3,18 @@ import numpy as np
 
 class CheckerboardDetectedFrames:
 
-    def __init__(self, camera_name, movie_name, frame_size, square_mm=3, checkerboard_dims=(7, 6), corners=[], corners2=[], frame_numbers=[]):
+    def __init__(self, camera_name, movie_name, frame_size, square_mm=3, checkerboard_dims=(7, 6), corners=None, corners2=None, frame_numbers=None):
         self._camera_name = camera_name
         self._movie_name = movie_name
         self._frame_size = frame_size # movie frame size
 
-        self._corners = corners # corner detector
-        self._corners2 = corners2 # refined corners
-        #self._grid_points = []
-        self._frame_numbers = frame_numbers # frame numbers for the corners
-        self._square_mm = square_mm # square edge length in mm
+        self._corners = corners or [] # corner detector
+        self._corners2 = corners2 or []# refined corners
+        self._frame_numbers = frame_numbers or [] # frame numbers for the corners
+
         self._checkerboard_dims = checkerboard_dims # dimensions of the checkboard
+        self._square_mm = square_mm # square edge length in mm
+
 
     # function to create the "flat" real world targets for camera calibration
     def setup_obj_points(self):
@@ -91,6 +92,27 @@ class CheckerboardDetectedFrames:
             corners=data_dict["_corners"],
             corners2=data_dict["_corners2"],
             frame_numbers=data_dict["_frame_numbers"])
+        return obj
+    
+
+    def filter_data(self, index):
+        new_corners = []
+        new_corners2 = []
+        new_frame_numbers = []
+        for i in range(len(index)):
+            new_corners.append(self._corners[index[i]])
+            new_corners2.append(self._corners2[index[i]])
+            new_frame_numbers.append(self._frame_numbers[index[i]])
+
+        obj = CheckerboardDetectedFrames(
+            self._camera_name,
+            self._movie_name,
+            self._frame_size,
+            square_mm=self._square_mm,
+            checkerboard_dims=self._checkerboard_dims,
+            corners=new_corners,
+            corners2=new_corners2,
+            frame_numbers=new_frame_numbers)
         return obj
 
     #def load_data(self, data_dict):
