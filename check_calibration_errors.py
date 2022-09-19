@@ -107,7 +107,8 @@ def main(argv):
 
     target_out_dir = FLAGS.out_dir + "/targets"
     os.makedirs(target_out_dir, exist_ok=True)
-    right_3d = []
+
+
     errors = np.zeros((len(frame_idx), 2))
     for i in range(len(frame_idx)):
         # for each frame triangulate and save the error
@@ -124,7 +125,6 @@ def main(argv):
         imgpoints_reproj1, _ = cv2.projectPoints(cam0_ref_points, R, T, mtx1, distortion1)
         error = np.sqrt(np.sum(np.square(corners_cam1[i].squeeze() - imgpoints_reproj1.squeeze()), axis=1)).sum() / len(imgpoints_reproj)
         errors[i, 1] = error
-        import pdb; pdb.set_trace()
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx[i])
         ret, frame = cap.read()
