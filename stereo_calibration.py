@@ -56,8 +56,12 @@ def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
 
-    mins = imgpoints.min(axis=0).squeeze().astype('int')
-    maxs = imgpoints.max(axis=0).squeeze().astype('int')
+    plot_write_cropped_corners(frame, "{}/stereo_reprojections/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), imgpoints, imgpoints2, offset=offset)
+
+
+def plot_write_cropped_corners(frame, outname, corners, corners2, offset=0, figure=None):
+    mins = corners.min(axis=0).squeeze().astype('int')
+    maxs = corners.max(axis=0).squeeze().astype('int')
 
     mins = mins - 60
     if mins[0] < 0:
@@ -66,33 +70,28 @@ def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam
         mins[1] = 0
     maxs = mins + 180
 
-    # adjust the corners
-    #frame = frame[mins[1]:maxs[1], mins[0]:maxs[0]]
+    frame = frame.copy()
+    frame = frame[mins[1]:maxs[1], mins[0]+offset:maxs[0]+offset]
 
-    # need to flip the corners
-    frame_reproj = frame.copy()
+    corners = corners.copy()
+    corners[:, 0, 0] = corners[:, 0, 0] - mins[0]
+    corners[:, 0, 1] = corners[:, 0, 1] - mins[1]
+    corners2 = corners2.copy()
+    corners2[:, 0, 0] = corners2[:, 0, 0] - mins[0]
+    corners2[:, 0, 1] = corners2[:, 0, 1] - mins[1]
 
-    imgpoints[:, 0, 0] = imgpoints[:, 0, 0] + offset
-    imgpoints2[:, 0, 0] = imgpoints2[:, 0, 0] + offset
-    # imgpoints[:, 0, 0] = imgpoints[:, 0, 0] - mins[0]
-    # imgpoints[:, 0, 1] = imgpoints[:, 0, 1] - mins[1]
-    # imgpoints2[:, 0, 0] = imgpoints2[:, 0, 0] - mins[0]
-    # imgpoints2[:, 0, 1] = imgpoints2[:, 0, 1] - mins[1]
-    # cv2.drawChessboardCorners(frame, squares_xy, imgpoints, True)
-    # draw_corner_numbers(frame_flipped, reordered)
-    # # mark the frame number on a flipped example
-    # cv2.putText(frame_flipped, "{}: {}".format(i, frame_num),
-    #     (20, 20),
-    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (209, 80, 0, 255), 1)
-    corners = imgpoints.squeeze()
-    calibrate_cameras.draw_corners(frame, corners, (255, 0, 255), 5)
-    corners = imgpoints2.squeeze()
-    calibrate_cameras.draw_corners(frame, corners, (0, 255, 255), 5)
+    color_id = np.arange(corners.shape[0])
 
-    # cv2.imshow("frame", frame)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    cv2.imwrite("{}/stereo_reprojections/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), frame)
+    corners = corners.squeeze()
+    corners2 = corners2.squeeze()
+
+    #plt.figure(figsize=(30, 30), dpi=100)
+    plt.imshow(frame)
+    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
+    plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
+    plt.savefig(outname)
+    #plt.show()
+    plt.close()
 
 
 def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2, cam1_id, cam2_id):
@@ -105,28 +104,25 @@ def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2
     # need to flip the corners
     frame_reproj = frame.copy()
 
-    cam1points[:, 0, 0] = cam1points[:, 0, 0]
-    cam2points[:, 0, 0] = cam2points[:, 0, 0]
-    # imgpoints[:, 0, 0] = imgpoints[:, 0, 0] - mins[0]
-    # imgpoints[:, 0, 1] = imgpoints[:, 0, 1] - mins[1]
-    # imgpoints2[:, 0, 0] = imgpoints2[:, 0, 0] - mins[0]
-    # imgpoints2[:, 0, 1] = imgpoints2[:, 0, 1] - mins[1]
-    # cv2.drawChessboardCorners(frame, squares_xy, imgpoints, True)
-    # draw_corner_numbers(frame_flipped, reordered)
-    # # mark the frame number on a flipped example
-    # cv2.putText(frame_flipped, "{}: {}".format(i, frame_num),
-    #     (20, 20),
-    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (209, 80, 0, 255), 1)
+
     corners = cam1points.squeeze()
-    draw_corners_with_offset(frame, corners, (255, 0, 255), 5, offset1)
+    corners[:, 0] = corners[:, 0] + offset1
 
-    corners = cam2points.squeeze()
-    draw_corners_with_offset(frame, corners, (0, 255, 255), 5, offset2)
+    corners2 = cam2points.squeeze()
+    corners2[:, 0] = corners2[:, 0] + offset2
 
-    # cv2.imshow("frame", frame)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    cv2.imwrite("{}/paired/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), frame)
+    color_id = np.arange(corners.shape[0])
+
+    plt.figure(figsize=(30, 10), dpi=100)
+    plt.imshow(frame)
+    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
+    plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='cool', marker='+', linewidths=1)
+    # draw lines betweeen points
+    # for i in range(corners.shape[0]):
+    #     plt.plot([corners[i, 0], corners2[i, 0]], [corners[i, 1], corners2[i, 1]])
+    plt.savefig("{}/paired/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx))
+    #plt.show()
+    plt.close()
 
 
 def draw_corners_with_offset(image, corners, color, markerSize, offset, markerType=cv2.MARKER_CROSS):
@@ -193,6 +189,25 @@ def cluster_corners(corners, num_clusters, seed):
     return clx, centroids
 
 
+def DLT(P1, P2, point1, point2):
+    A = [point1[1]*P1[2,:] - P1[1,:],
+         P1[0,:] - point1[0]*P1[2,:],
+         point2[1]*P2[2,:] - P2[1,:],
+         P2[0,:] - point2[0]*P2[2,:]
+        ]
+    A = np.array(A).reshape((4,4))
+    #print('A: ')
+    #print(A)
+ 
+    B = A.transpose() @ A
+    from scipy import linalg
+    U, s, Vh = linalg.svd(B, full_matrices = False)
+ 
+    # print('Triangulated point: ')
+    # print(Vh[3,0:3]/Vh[3,3])
+    return Vh[3,0:3]/Vh[3,3]
+
+
 def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_calibs):
     cap = cv2.VideoCapture(FLAGS.input_video)
     full_width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -211,7 +226,9 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     all_corners = calibrate_cameras.get_corners(frame, calib_frames, offsets, True)
     all_overlapping_sampled_idx = []
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 1000, 0.0001)
-    for overlapping_frames in all_overlapping_frames:
+    #for overlapping_frames in all_overlapping_frames:
+    for i_overlap in range(len(all_overlapping_frames)):
+        overlapping_frames = all_overlapping_frames[i_overlap]
         cam1_id = overlapping_frames["view1"]
         cam2_id = overlapping_frames["view2"]
 
@@ -304,8 +321,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         objpoints = cam1_frames.setup_obj_points()
         objpoints = objpoints[:len(imgpoints1)]
         frame_idx = calibrate_cameras.index_list(frame_idx, flat_sampled_idx)
-        write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
-
+        #write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
         #import pdb; pdb.set_trace()
 
         mtx1 = cam1["mtx"]
@@ -328,25 +344,37 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         # reproject and check errors
         RT1 = np.concatenate([np.eye(3), [[0],[0],[0]]], axis = -1)
         RT2 = np.concatenate([R, T], axis = -1)
-
-        proj_mat1 = mtx1 @ RT1
-        proj_mat2 = mtx2 @ RT2
+        proj_mat1 = RT1
+        proj_mat2 = RT2
 
         mean_error = 0
+        all_triangulated = []
+        all_reproj1 = []
+        all_reproj2 = []
+        all_frame_numbers = []
         for i in range(len(imgpoints1)):
-            triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, imgpoints1[i], imgpoints2[i])
+            points1u = cv2.undistortPoints(imgpoints1[i], mtx1, dist1, R=None, P=None)
+            points2u = cv2.undistortPoints(imgpoints2[i], mtx2, dist2, R=None, P=None)
+            #triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, imgpoints1[i], imgpoints2[i])
+            triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, points1u, points2u)
             cam1_ref_points = triangulated/triangulated[3, :]
             cam1_ref_points = cam1_ref_points[:3, :].T
+            all_triangulated.append(cam1_ref_points)
+            all_frame_numbers.append(frame_idx[i])
 
             #imgpoints_reproj, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx1, dist1)
             imgpoints_reproj, _ = cv2.projectPoints(cam1_ref_points, np.eye(3), np.zeros((3,1)), mtx1, dist1)
             error = cv2.norm(imgpoints1[i], imgpoints_reproj, cv2.NORM_L2)/len(imgpoints_reproj)
             mean_error += error
+            all_reproj1.append(imgpoints_reproj)
             write_stereo_reprojection(cap, imgpoints1[i], imgpoints_reproj, frame_idx[i], offsets[cam1_id], cam1_id, cam2_id)
 
             imgpoints_reproj2, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx2, dist2)
-            import pdb; pdb.set_trace()
-            # write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id)
+            all_reproj2.append(imgpoints_reproj2)
+            error = cv2.norm(imgpoints2[i], imgpoints_reproj2, cv2.NORM_L2)/len(imgpoints_reproj)
+            #mean_error += error
+            #import pdb; pdb.set_trace()
+            #write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id)
 
             # # manual change of frame of reference to test...
             # cam2_ref_points = (R @ cam1_ref_points.T + T).T
@@ -354,7 +382,8 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             # test_points = test_points.astype('float32')
             # test_error = cv2.norm(test_points, imgpoints_reproj2, cv2.NORM_L2)/len(imgpoints_reproj)
 
-        print( "total error: {}".format(mean_error/len(objpoints)) )
+        #print( "total error: {}".format(mean_error/(2*len(objpoints))) )
+        print( "total error: {}".format(mean_error/(len(objpoints))) )
 
         # write the data to a mat file.
         # need, R, T, square size, num squares, fc, cc and skew.
@@ -387,6 +416,17 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             "recompute_intrinsic_left": 1
         }
         scipy.io.savemat("{}/cam_{}{}_opencv.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict)
+        # save sampled points for testing in matlab.
+        out_dict2 = {
+            "imgpoints1": imgpoints1,
+            "imgpoints2": imgpoints2,
+            "all_triangulated": all_triangulated,
+            "all_reproj1": all_reproj1,
+            "all_reproj2": all_reproj2,
+            "frame_numbers": all_frame_numbers
+        }
+        print("saving...")
+        scipy.io.savemat("{}/sampled_{}{}.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict2)
 
     overlapped_sampled_name = FLAGS.out_dir + "/overlapped_sampled.pkl"
     overlapped_sampled = {
