@@ -1,5 +1,6 @@
 # script to run the full pipeline.
 OUTDIR=/workspace/calibration/20220913_stereo_test
+#OUTDIR=/workspace/calibration/20220913_stereo_not_filtered
 #mkdir $OUTDIR
 INPUTVIDEO=/workspace/calibration/calibration_videos/merged/calibration.avi
 
