@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 
 class CheckerboardDetectedFrames:
@@ -115,12 +116,14 @@ class CheckerboardDetectedFrames:
             frame_numbers=new_frame_numbers)
         return obj
 
-    #def load_data(self, data_dict):
 
-
-    # def __str__(self):
-    #     return 
-
+def load_calibs(filename):
+    with open(filename, "rb") as fid:
+        checkerboard_data = pickle.load(fid)
+        checkerboard_frames = []
+        for i in range(len(checkerboard_data)):
+            checkerboard_frames.append(CheckerboardDetectedFrames.from_data(checkerboard_data[i]))
+    return checkerboard_frames
 
 # class CalibratedCamData:
 #     mtx = []

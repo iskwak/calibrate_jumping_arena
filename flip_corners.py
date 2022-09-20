@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from absl import app
 from absl import flags
 import pickle
+import calibrationdata
 from calibrationdata import CheckerboardDetectedFrames
 import time
 import shared_flags
@@ -44,12 +45,7 @@ def draw_corner_numbers(image, corners, offset):
 def main(argv):
     del argv
 
-    with open(FLAGS.detected_frames, "rb") as fid:
-        calib_data = pickle.load(fid)
-        calib_frames = []
-        for i in range(len(calib_data)):
-            calib_frames.append(CheckerboardDetectedFrames.from_data(calib_data[i]))
-
+    checkerboard_frames = calibrationdata.load_calibs(FLAGS.detected_frames)
     write_video = True
     if FLAGS.flipped_video is None or FLAGS.calib_video is None:
         write_video = False
@@ -69,27 +65,38 @@ def main(argv):
         else:
             writer = cv2.VideoWriter(FLAGS.flipped_video, fourcc, fps, (full_width, 2 * height))
 
+    flipped_frames = []
+    for i in range(len(checkerboard_frames)):
+        flipped_frames.append(CheckerboardDetectedFrames(
+            checkerboard_frames[i].camera_name, checkerboard_frames[i].movie_name, checkerboard_frames[i].frame_size,
+            square_mm=checkerboard_frames[i].square_mm, checkerboard_dims=checkerboard_frames[i]
+        ))
 
     # width, height
-    (num_cols, num_rows) = calib_frames[0].checkerboard_dims
+    (num_cols, num_rows) = checkerboard_frames[0].checkerboard_dims
     # go through the corners and flip them.
     # create an image to plot on.
     # for j in range(3):
-    for j in range(len(calib_frames)):
+    for j in range(len(checkerboard_frames)):
         #if j > 1 and write_video == True:
         #    break
-        cur_calib = calib_frames[j]
+        cur_calib = checkerboard_frames[j]
+        print("Processing {}".format(cur_calib.movie_name))
         for i in range(len(cur_calib.frame_numbers)):
 
             frame_num = cur_calib.frame_numbers[i]
+            corners = cur_calib.corners[i]
             corners2 = cur_calib.corners2[i]
             reorder_needed = False
             if corners2[-1, 0, 0] < corners2[0, 0, 0]:
                 reorder_needed = True
                 # reorder the corners
-                reordered = reorder_corners(corners2, num_rows, num_cols)
+                corners = reorder_corners(corners, num_rows, num_cols)
+                corners2 = reorder_corners(corners2, num_rows, num_cols)
                 # update the calibration corners
-                cur_calib.corners2[i] = reordered
+                #cur_calib.corners2[i] = reordered
+
+            flipped_frames[j].add_data(frame_num, corners, corners2)
 
             if write_video == True:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
@@ -137,10 +144,10 @@ def main(argv):
     
     # write the new corners to disk
     with open(FLAGS.flipped_frames, "wb") as fid:
-        calib_data = []
-        for i in range(len(calib_frames)):
-            calib_data.append(calib_frames[i].serialize_data())
-        pickle.dump(calib_data, fid)
+        checkerboard_data = []
+        for i in range(len(flipped_frames)):
+            checkerboard_data.append(flipped_frames[i].serialize_data())
+        pickle.dump(checkerboard_data, fid)
 
     # with open(FLAGS.flipped_frames, "rb") as fid:
     #     all_calib_data = pickle.load(fid)

@@ -87,8 +87,8 @@ def plot_write_cropped_corners(frame, outname, corners, offset=0, figure=None):
 
     color_id = np.arange(corners.shape[0])
     plt.imshow(frame)
-    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cool', marker='x', linewidths=1)
-    plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
+    plt.scatter(corners[:, 0], corners[:, 1], 12, c=color_id, cmap='cividis', marker='x', linewidths=1)
+    #plt.scatter(corners2[:, 0], corners2[:, 1], 12, c=color_id, cmap='plasma', marker='+', linewidths=1)
     plt.savefig(outname)
     #plt.show()
     plt.close()
