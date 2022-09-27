@@ -278,11 +278,11 @@ def main(argv):
             mean_pixel_error += error_pixel
             if FLAGS.out_dir is not None and FLAGS.input_video is not None:
                 # write the frames to disk
-                outname = FLAGS.out_dir + "/cam_{}_error_{}_reproj_{}.png".format(i, error, frame_idx[j])
+                outname = FLAGS.out_dir + "/cam_{}_error_{}_reproj_{}.svg".format(i, error, frame_idx[j])
                 plot_reprojection(cap, outname, curr_frames.squares_xy, imgpoints[j], imgpoints2, frame_idx[j], offsets[i])
  
         if FLAGS.out_dir is not None and FLAGS.input_video is not None:
-            outname = FLAGS.out_dir + "/worst_cam_{}_error_{}_frame_{}.png".format(i, worst_error, frame_idx[worst_error_idx], offsets[i])
+            outname = FLAGS.out_dir + "/worst_cam_{}_error_{}_frame_{}.svg".format(i, worst_error, frame_idx[worst_error_idx], offsets[i])
             plot_reprojection(cap, outname, curr_frames.squares_xy, imgpoints[worst_error_idx],
                 all_reprojections[worst_error_idx], frame_idx[worst_error_idx], offsets[i])
 

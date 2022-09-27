@@ -52,11 +52,12 @@ def get_all_overlapping_frames(calib_frames):
     return all_overlapping
 
 
-def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam1_id, cam2_id):
+def write_stereo_reprojection(cap, imgpoints, imgpoints2, frame_idx, offset, cam1_id, cam2_id, error):
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     ret, frame = cap.read()
+    os.makedirs("{}/stereo_reprojections/{}{}/".format(FLAGS.out_dir, cam1_id, cam2_id), exist_ok=True)
 
-    plot_write_cropped_corners(frame, "{}/stereo_reprojections/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx), imgpoints, imgpoints2, offset=offset)
+    plot_write_cropped_corners(frame, "{}/stereo_reprojections/{}{}/{}.svg".format(FLAGS.out_dir, cam1_id, cam2_id, error), imgpoints, imgpoints2, offset=offset)
 
 
 def plot_write_cropped_corners(frame, outname, corners, corners2, offset=0, figure=None):
@@ -70,7 +71,9 @@ def plot_write_cropped_corners(frame, outname, corners, corners2, offset=0, figu
         mins[1] = 0
     maxs = mins + 180
 
-    frame = frame.copy()
+    # debugging... something went weird
+    old_frame = frame
+    frame = old_frame.copy()
     frame = frame[mins[1]:maxs[1], mins[0]+offset:maxs[0]+offset]
 
     corners = corners.copy()
@@ -120,7 +123,7 @@ def write_stereo_points(cap, cam1points, cam2points, frame_idx, offset1, offset2
     # draw lines betweeen points
     # for i in range(corners.shape[0]):
     #     plt.plot([corners[i, 0], corners2[i, 0]], [corners[i, 1], corners2[i, 1]])
-    plt.savefig("{}/paired/{}{}_{}.png".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx))
+    plt.savefig("{}/paired/{}{}_{}.svg".format(FLAGS.out_dir, cam1_id, cam2_id, frame_idx))
     #plt.show()
     plt.close()
 
@@ -321,7 +324,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         objpoints = cam1_frames.setup_obj_points()
         objpoints = objpoints[:len(imgpoints1)]
         frame_idx = calibrate_cameras.index_list(frame_idx, flat_sampled_idx)
-        #write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
+        write_all_stereo_points(cap, imgpoints1, imgpoints2, frame_idx, offsets, cam1_id, cam2_id)
         #import pdb; pdb.set_trace()
 
         mtx1 = cam1["mtx"]
@@ -331,15 +334,11 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         dist2 = cam2["dist"]
 
         start_time = time.time()
-        ret, _, _, _, _, R, T, E, F = cv2.stereoCalibrate(
+        ret, _, _, _, _, R, T, _, F = cv2.stereoCalibrate(
             objpoints, imgpoints1, imgpoints2, mtx1, dist1, mtx2, dist2, (512, 512), criteria=criteria,
             flags=cv2.CALIB_FIX_INTRINSIC)
         print("error: {}".format(ret))
         print("Time taken: {}".format(time.time() - start_time))
-
-        # ret, _, _, _, _, R_test, T_test, E_test, F_test = cv2.stereoCalibrate(
-        #     objpoints, imgpoints2, imgpoints1, mtx2, dist2, mtx1, dist1, (512, 512), criteria=criteria,
-        #     flags=cv2.CALIB_FIX_INTRINSIC)
 
         # reproject and check errors
         RT1 = np.concatenate([np.eye(3), [[0],[0],[0]]], axis = -1)
@@ -355,26 +354,24 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         for i in range(len(imgpoints1)):
             points1u = cv2.undistortPoints(imgpoints1[i], mtx1, dist1, R=None, P=None)
             points2u = cv2.undistortPoints(imgpoints2[i], mtx2, dist2, R=None, P=None)
-            #triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, imgpoints1[i], imgpoints2[i])
+
             triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, points1u, points2u)
             cam1_ref_points = triangulated/triangulated[3, :]
             cam1_ref_points = cam1_ref_points[:3, :].T
             all_triangulated.append(cam1_ref_points)
             all_frame_numbers.append(frame_idx[i])
 
-            #imgpoints_reproj, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx1, dist1)
             imgpoints_reproj, _ = cv2.projectPoints(cam1_ref_points, np.eye(3), np.zeros((3,1)), mtx1, dist1)
-            error = cv2.norm(imgpoints1[i], imgpoints_reproj, cv2.NORM_L2)/len(imgpoints_reproj)
+            error = np.sqrt(np.sum(np.square(imgpoints1[i].squeeze() - imgpoints_reproj.squeeze()), axis=1)).sum() / len(imgpoints_reproj)
             mean_error += error
             all_reproj1.append(imgpoints_reproj)
-            write_stereo_reprojection(cap, imgpoints1[i], imgpoints_reproj, frame_idx[i], offsets[cam1_id], cam1_id, cam2_id)
+            write_stereo_reprojection(cap, imgpoints1[i], imgpoints_reproj, frame_idx[i], offsets[cam1_id], cam1_id, cam2_id, error)
 
             imgpoints_reproj2, _ = cv2.projectPoints(cam1_ref_points, R, T, mtx2, dist2)
             all_reproj2.append(imgpoints_reproj2)
-            error = cv2.norm(imgpoints2[i], imgpoints_reproj2, cv2.NORM_L2)/len(imgpoints_reproj)
+            error = np.sqrt(np.sum(np.square(imgpoints2[i].squeeze() - imgpoints_reproj2.squeeze()), axis=1)).sum() / len(imgpoints_reproj2)
             #mean_error += error
-            #import pdb; pdb.set_trace()
-            #write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id)
+            #write_stereo_reprojection(cap, imgpoints2[i], imgpoints_reproj2, frame_idx[i], offsets[cam2_id], cam2_id, cam1_id, error)
 
             # # manual change of frame of reference to test...
             # cam2_ref_points = (R @ cam1_ref_points.T + T).T
@@ -391,8 +388,8 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         om = cv2.Rodrigues(R)
         om = om[0]
         out_dict = {
-            "calib_name_left": "cam_{}".format(cam2_id),
-            "calib_name_right": "cam_{}".format(cam1_id),
+            "calib_name_left": "cam_{}".format(cam1_id),
+            "calib_name_right": "cam_{}".format(cam2_id),
             "cam0_id": cam1_id,
             "cam1_id": cam2_id,
             "dX": 3,
@@ -409,6 +406,7 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
             "om": om,
             "R": R,
             "T": T,
+            "F": F,
             "active_images_left": [],
             "cc_left_error": 0,
             "cc_right_error": 0,
