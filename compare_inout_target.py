@@ -180,6 +180,8 @@ def main(argv):
     calib1 = calib_frames[cam1_id]
 
     mean_error = []
+    errors_in = []
+    errors_out = []
     for i in range(num_overlapping):
         view0_idx = overlapped_points["overlapping1"][i]
         view1_idx = overlapped_points["overlapping2"][i]
@@ -210,6 +212,11 @@ def main(argv):
             error0 = np.sqrt(np.sum(np.square(imgpoints0.squeeze() - imgpoints_reproj.squeeze()), axis=1)).sum() / len(imgpoints_reproj)
             #mean_error += error0
             mean_error.append(error0)
+            if not frame_num0 in sampled_frames["frame_numbers"].flatten():
+                errors_out.append(error0)
+            else:
+                errors_in.append(error0)
+
 
             imgpoints_reproj1, _ = cv2.projectPoints(cam0_ref_points, R01, T01, mtx1, distortion1)
             error1 = cv2.norm(imgpoints1, imgpoints_reproj1, cv2.NORM_L2)/len(imgpoints_reproj)
@@ -223,37 +230,13 @@ def main(argv):
             # cv2.imshow("moo", new_frame)
             # cv2.waitKey()
 
-    print("total error: {}".format(sum(mean_error)/len(mean_error)))
-    om = cv2.Rodrigues(R01)
-    om = om[0]
-    out_dict = {
-        "calib_name_left": "cam_{}".format(cam0_id),
-        "calib_name_right": "cam_{}".format(cam1_id),
-        "cam0_id": cam0_id,
-        "cam1_id": cam1_id,
-        "dX": 3,
-        "nx": 512,
-        "ny": 512,
-        "fc_left": [mtx0[0, 0], mtx0[1, 1]],
-        "cc_left": [mtx0[0, 2], mtx0[1, 2]],
-        "alpha_c_left": 0.0, # opencv doesnt use the skew parameter
-        "kc_left": distortion0,
-        "fc_right": [mtx1[0, 0], mtx1[1, 1]],
-        "cc_right": [mtx1[0, 2], mtx1[1, 2]],
-        "alpha_c_right": 0.0, # opencv doesnt use the skew parameter
-        "kc_right": distortion1,
-        "om": om,
-        "R": R01,
-        "T": T01,
-        "active_images_left": [],
-        "cc_left_error": 0,
-        "cc_right_error": 0,
-        "recompute_intrinsic_right": 1,
-        "recompute_intrinsic_left": 1
-    }
-    scipy.io.savemat("{}/cam_{}{}_built_opencv.mat".format(FLAGS.out_dir, 0, 1), out_dict)
+    print(sum(errors_out)/len(errors_out))
+    print(sum(errors_in)/len(errors_in))
 
-
+    plt.hist(errors_out, bins=np.linspace(0, 10, 10), density=True, alpha=0.5)
+    plt.hist(errors_in, bins=np.linspace(0, 10, 10), density=True, alpha=0.5)
+    plt.show()
+    print("1")
 
 
 if __name__ == "__main__":

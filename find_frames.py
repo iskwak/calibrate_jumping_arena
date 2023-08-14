@@ -83,6 +83,12 @@ def main(argv):
             find_corners(camera_calib_frames[1], color_right, gray_right, frame_num)
             find_corners(camera_calib_frames[2], color_center, gray_center, frame_num)
 
+            if frame_num == 390:
+                import pdb; pdb.set_trace()
+            print("{}:  {} {} {}".format(frame_num, len(camera_calib_frames[0].frame_numbers), len(camera_calib_frames[1].frame_numbers), len(camera_calib_frames[2].frame_numbers)))
+            if len(camera_calib_frames[0].frame_numbers) > 0 or len(camera_calib_frames[1].frame_numbers) > 0 or len(camera_calib_frames[2].frame_numbers) > 0:
+                import pdb; pdb.set_trace()
+
             if FLAGS.outvideo is not None:
                 full_frame = np.concatenate((color_left, color_right), axis=1)
                 full_frame = np.concatenate((full_frame, color_center), axis=1)

@@ -15,12 +15,12 @@ import calibrate_cameras
 
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("calib02", "../calibration/20220726_bigvideo_test/cam_02_opencv.mat", "First calib file")
-flags.DEFINE_string("calib12", "../calibration/20220726_bigvideo_test/cam_12_opencv.mat", "Second calib file")
-flags.DEFINE_string("calib01", "../calibration/20220726_bigvideo_test/cam_01_opencv.mat", "Original calib file")
-flags.DEFINE_string("frame_info", "../calibration/20220726_bigvideo_test/flipped_frames.pkl", "Calibration frames data.")
+flags.DEFINE_string("calib02", "../calibration/20220913_stereo_test_copy/cam_02_opencv.mat", "First calib file")
+flags.DEFINE_string("calib12", "../calibration/20220913_stereo_test_copy/cam_12_opencv.mat", "Second calib file")
+flags.DEFINE_string("calib01", "../calibration/20220913_stereo_test_copy/cam_01_opencv.mat", "Original calib file")
+flags.DEFINE_string("frame_info", "../calibration/20220913_stereo_test_copy/flipped_frames.pkl", "Calibration frames data.")
 flags.DEFINE_string("calib_video", "/workspace/calibration/calibration_videos/merged/calibration.avi", "Calibrated Camera Output File Name.")
-flags.DEFINE_string("camera_calibs", "../calibration/20220726_bigvideo_test/calibrated_cameras.pkl", "Calibrated camera data")
+flags.DEFINE_string("camera_calibs", "../calibration/20220913_stereo_test_copy/calibrated_cameras.pkl", "Calibrated camera data")
 flags.DEFINE_string("sampled", None, "Frames sampled for calibrating views 0 and 1")
 
 
