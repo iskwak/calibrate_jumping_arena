@@ -1,5 +1,5 @@
 # script to run the full pipeline.
-OUTDIR=/workspace/calibration/20220913_stereo_test
+OUTDIR=/workspace/calibration/20220913_stereo_test_copy
 #OUTDIR=/workspace/calibration/20220913_stereo_not_filtered
 #mkdir $OUTDIR
 INPUTVIDEO=/workspace/calibration/calibration_videos/merged/calibration.avi
@@ -8,5 +8,8 @@ INPUTVIDEO=/workspace/calibration/calibration_videos/merged/calibration.avi
 
 #time python calibrate_cameras.py --calib_frames $OUTDIR/filtered_frames.pkl --calibrated_name $OUTDIR/calibrated_cameras.pkl --out_dir $OUTDIR/single_cam_calib --input_video $INPUTVIDEO --num_frames 150
 
-time python stereo_calibration.py --calib_frames $OUTDIR/filtered_frames.pkl --calibrated_name $OUTDIR/calibrated_cameras.pkl --input_video $INPUTVIDEO --out_dir $OUTDIR --num_frames 150
+#time python stereo_calibration.py --calib_frames $OUTDIR/filtered_frames.pkl --calibrated_name $OUTDIR/calibrated_cameras.pkl --input_video $INPUTVIDEO --out_dir $OUTDIR --num_frames 150
 #time python stereo_calibration.py --calib_frames /workspace/calibration/20220726_bigvideo_test/flipped_frames.pkl --calibrated_name $OUTDIR/calibrated_cameras.pkl --input_video $INPUTVIDEO --out_dir $OUTDIR --num_frames 150
+
+# create a calibration matrix from 0->1, 1->2
+# time python test_create_cam12_calib.py --calib02 $OUTDIR/cam_02_opencv.mat --calib12 $OUTDIR/cam_12_opencv.mat --frame_info $OUTDIR/filtered_frames.pkl --calib_video $INPUTVIDEO --camera_calibs $OUTDIR/calibrated_cameras.pkl --out_dir $OUTDIR

@@ -227,7 +227,9 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
     all_overlapping_sampled_idx = []
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 1000, 0.0001)
     #for overlapping_frames in all_overlapping_frames:
-    for i_overlap in range(len(all_overlapping_frames)):
+    #for i_overlap in range(len(all_overlapping_frames)):
+    for i_overlap in range(1,len(all_overlapping_frames)):
+
         overlapping_frames = all_overlapping_frames[i_overlap]
         cam1_id = overlapping_frames["view1"]
         cam2_id = overlapping_frames["view2"]
@@ -238,6 +240,8 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         cam1_frames = calib_frames[cam1_id]
         cam2_frames = calib_frames[cam2_id]
         print("num overlapping: {}".format(len(overlapping_frames["overlapping1"])))
+        if len(overlapping_frames["overlapping1"]) < 1:
+            continue
 
         imgpoints1 = calibrate_cameras.index_list(cam1_frames.corners2, overlapping_frames["overlapping1"])
         imgpoints2 = calibrate_cameras.index_list(cam2_frames.corners2, overlapping_frames["overlapping2"])
@@ -273,47 +277,48 @@ def calibrate_all_camera_pairs(calib_frames, all_overlapping_frames, camera_cali
         rng = np.random.RandomState(123)
         seed = 123
         # num_clusters = 100
+        
+        # cluster_ids, centroids = cluster_corners(clustering_corner_cam1, FLAGS.num_frames, seed)
+        # flat_sampled, flat_sampled_idx, flat_cluster_ids = sample_corners(rng, clustering_corner_cam1, cluster_ids, FLAGS.num_frames, num_samples=1)
+        # all_overlapping_sampled_idx.append(flat_sampled_idx)
+        flat_sampled_idx = list(range(len(clustering_corner_cam1)))
+        # if FLAGS.out_dir is not None:
+        #     cluster_frame = frame.copy()
+        #     draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, cluster_ids, FLAGS.num_frames, offsets[cam1_id], offsets[cam2_id], 3)
+        #     cv2.imwrite("{}/clusters_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
+        #     #cv2.imshow("clusters", cluster_frame)
 
-        cluster_ids, centroids = cluster_corners(clustering_corner_cam1, FLAGS.num_frames, seed)
-        flat_sampled, flat_sampled_idx, flat_cluster_ids = sample_corners(rng, clustering_corner_cam1, cluster_ids, FLAGS.num_frames, num_samples=1)
-        all_overlapping_sampled_idx.append(flat_sampled_idx)
-        if FLAGS.out_dir is not None:
-            cluster_frame = frame.copy()
-            draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, cluster_ids, FLAGS.num_frames, offsets[cam1_id], offsets[cam2_id], 3)
-            cv2.imwrite("{}/clusters_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
-            #cv2.imshow("clusters", cluster_frame)
+        #     centroid_frame = corner_frame.copy()
+        #     draw_corners_with_offset(centroid_frame, centroids, (0, 0, 255), 5, offsets[cam1_id])
+        #     cv2.imwrite("{}/centroids_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), centroid_frame)
+        #     #cv2.imshow("centroids", centroid_frame)
 
-            centroid_frame = corner_frame.copy()
-            draw_corners_with_offset(centroid_frame, centroids, (0, 0, 255), 5, offsets[cam1_id])
-            cv2.imwrite("{}/centroids_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), centroid_frame)
-            #cv2.imshow("centroids", centroid_frame)
-
-            # draw sampled corners.
-            #draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
-            # for debug purposes, grab the first corner of each imgpoint for plotting
-            #debug_corners1 = []
-            # for i_debug in range(len(flat_sampled)):
-            #     debug_corners1.append(flat_sampled[i_debug])
-            #debug_corners1 = np.vstack(debug_corners1)
-            debug_corners1 = flat_sampled
-            #draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, 0, markerType=cv2.MARKER_STAR)
-            #draw_corners_with_offset(cluster_frame, clustering_corner_cam2[flat_sampled_idx], (255, 0, 0), 10, offsets[1], markerType=cv2.MARKER_STAR)
-            #draw_paired_clusters(rng, cluster_frame, debug_corners1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
-            temp_imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
-            temp_imgpoints2 = calibrate_cameras.index_list(imgpoints2, flat_sampled_idx)
-            debug_corners1 = []
-            debug_corners2 = []
-            for i_debug in range(len(flat_sampled)):
-                debug_corners1.append(temp_imgpoints1[i_debug][0])
-                debug_corners2.append(temp_imgpoints2[i_debug][0])
-            debug_corners1 = np.vstack(debug_corners1)
-            debug_corners2 = np.vstack(debug_corners2)
-            draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, offsets[cam1_id], markerType=cv2.MARKER_STAR)
-            draw_corners_with_offset(cluster_frame, debug_corners2, (255, 0, 0), 10, offsets[cam2_id], markerType=cv2.MARKER_STAR)
-            cv2.imwrite("{}/sampled_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
-            #cv2.imshow("sampled", cluster_frame)
-            #cv2.waitKey()
-            #cv2.destroyAllWindows()
+        #     # draw sampled corners.
+        #     #draw_paired_clusters(rng, cluster_frame, clustering_corner_cam1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
+        #     # for debug purposes, grab the first corner of each imgpoint for plotting
+        #     #debug_corners1 = []
+        #     # for i_debug in range(len(flat_sampled)):
+        #     #     debug_corners1.append(flat_sampled[i_debug])
+        #     #debug_corners1 = np.vstack(debug_corners1)
+        #     debug_corners1 = flat_sampled
+        #     #draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, 0, markerType=cv2.MARKER_STAR)
+        #     #draw_corners_with_offset(cluster_frame, clustering_corner_cam2[flat_sampled_idx], (255, 0, 0), 10, offsets[1], markerType=cv2.MARKER_STAR)
+        #     #draw_paired_clusters(rng, cluster_frame, debug_corners1, clustering_corner_cam2, flat_sampled_idx, num_clusters, offsets[cam1_id], offsets[cam2_id], 10, cv2.MARKER_STAR)
+        #     temp_imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
+        #     temp_imgpoints2 = calibrate_cameras.index_list(imgpoints2, flat_sampled_idx)
+        #     debug_corners1 = []
+        #     debug_corners2 = []
+        #     for i_debug in range(len(flat_sampled)):
+        #         debug_corners1.append(temp_imgpoints1[i_debug][0])
+        #         debug_corners2.append(temp_imgpoints2[i_debug][0])
+        #     debug_corners1 = np.vstack(debug_corners1)
+        #     debug_corners2 = np.vstack(debug_corners2)
+        #     draw_corners_with_offset(cluster_frame, debug_corners1, (255, 0, 0), 10, offsets[cam1_id], markerType=cv2.MARKER_STAR)
+        #     draw_corners_with_offset(cluster_frame, debug_corners2, (255, 0, 0), 10, offsets[cam2_id], markerType=cv2.MARKER_STAR)
+        #     cv2.imwrite("{}/sampled_cams_{}{}.png".format(FLAGS.out_dir, cam1_id, cam2_id), cluster_frame)
+        #     #cv2.imshow("sampled", cluster_frame)
+        #     #cv2.waitKey()
+        #     #cv2.destroyAllWindows()
 
         # do a sampling here...
         imgpoints1 = calibrate_cameras.index_list(imgpoints1, flat_sampled_idx)
