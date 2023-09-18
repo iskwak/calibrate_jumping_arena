@@ -12,8 +12,8 @@ FLAGS = flags.FLAGS
 flags.adopt_module_key_flags(calibflags)
 
 
-def findCorners(detectedCorners, frame, frameNum, color):
-    squares_xy = (7, 6)
+def findCorners(detectedCorners, squares_xy, frame, frameNum, color):
+    #squares_xy = (7, 6)
     # termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
 
@@ -37,6 +37,7 @@ def main(argv):
     width = int(fullWidth / 3)
     fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
     fps = cap.get(cv2.CAP_PROP_FPS)
+    squares_xy = (7, 6)
 
     if FLAGS.out_video is not None:
         fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
@@ -77,7 +78,7 @@ def main(argv):
                 graySplit.append(gray[:, start:end])
 
             for i in range(numViews):
-                findCorners(detectedCorners[i], graySplit[i], frameNum, colorSplit[i])
+                findCorners(detectedCorners[i], squares_xy, graySplit[i], frameNum, colorSplit[i])
 
             if FLAGS.out_video is not None:                
                 fullFrame = np.concatenate(colorSplit, axis=1)

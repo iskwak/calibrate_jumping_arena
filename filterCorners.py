@@ -55,7 +55,7 @@ def write_sample_examples(out_dir, cap, calib_frames, idx, offset, cam_num, num_
             plt.close()
 
 
-def writeFilteredVideo(filteredIdx, 
+#def writeFilteredVideo(filteredIdx, 
 
 
 def main(argv):
@@ -67,7 +67,7 @@ def main(argv):
         cornerDict = pickle.load(fid) 
         cornerData = []
         for i in range(len(cornerDict)):
-            cornerData.append(CheckerBoardCorners.fromDict(cornerDict[i]))
+            cornerData.append(CheckerboardCorners.fromDict(cornerDict[i]))
 
     # for each set of detections, prune the results. 
     numViews = len(cornerData)
@@ -89,7 +89,7 @@ def main(argv):
     # after filtering the detections, optionally create a video to see the
     # corners that were kept/removed.
     if FLAGS.output_basename is not None:
-        writeVideo(
+        #writeVideo(
         
         cap = cv2.VideoCapture(FLAGS.calib_video)
         fullWidth  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -100,8 +100,6 @@ def main(argv):
         #offsets = [0, width, 2 * width]
         
         keptWriter = cv2.VideoWriter(FLAGS.output_basename, fourcc, fps, (fullWidth, height))
-
-
 
 
     # create a debug visualization of all the top left corners
