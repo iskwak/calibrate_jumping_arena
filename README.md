@@ -13,7 +13,7 @@ NOTE: There will be off by one naming convention issues. In python the camera id
 * Make sure that the video streams are in the following order: right camera, left camera, center camera.
 * At the moment, it was easier to calibrate and collect the data if each video had a specific purpose.
 ** For example, calibrating the intrinsic parameters of a single camera is one video. Then another video for calibrating the stereo extrinsinc parameters for a pair of cameras.
-2) Detect checkerboard c
+2) Detect checkerboard board.
 
 
 
