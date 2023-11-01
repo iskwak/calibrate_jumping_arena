@@ -76,7 +76,7 @@ Description of parameters:
 (GET PICTURES OF SQUARES_XY SQUARE_MM THING)
 
 ### 3) Calibrate each individual camera.
-This estimates the intrinsic parameters for a camaera.
+This estimates the intrinsic parameters for a camaera. This script will use opencv's calibrateCamera function to calibrate a single camera.
 
 Example parameters json file.
 ```
@@ -99,9 +99,26 @@ python calibrateCamera.py --params /workspace/calibration/20230830_calibrationvi
 ```
 
 ### 4) Calibrate pairs of cameras
+Estimate the extrinsinc parameters between two cameras. Because of the physical camera configuration, we will only be calibrating camera 1 with camera 3, and camera 2 with camera 3. This script will use opencv's stereoCalibrate function.
 
+Example parameters json file:
+```
+{
+    "base_dir": "/workspace/calibration/20230830_calibrationvideos",
+    "calibration": ["calibrations/calibration_0.pkl", "calibrations/calibration_1.pkl"],
+    "stereos": ["cam_02_opencv.mat", "cam_21_opencv.mat", "cam_12_opencv.mat"],
+    "num_views": 3,
+    "square_mm": 5,
+    "views": [0,1]
+}
+```
+Example command:
+```
+python stereoCalibrate.py --params /workspace/calibration/20230830_calibrationvideos/calib_02.json
+```
 
-### 5) Estimate the extrinsic parameters between 
+### 5) Estimate the extrinsic parameters between camera 1 and camera 2
+Because camera 1 and camera 2 was difficult to calibrate using opencv's stereoCalibrate function, we will estimate the parameters between camera 1 and camera 2 by contructing a rotation and translation matrix through camera 1 <-> camera 3 <-> camera 2.
 
 
 ### 6) Finalize calibration using another repository.
