@@ -11,7 +11,7 @@ The camera configuration has been difficult to calibrate properly. The right and
 At the time of writing this document, the right and center camera angle is under 90 degrees, and the left and center camera's angle is over 90 degrees. This has made it harder to collect videos where the target is visible to the center and left camera in all areas in the rig.
 
 #### Video Format from Jason's Data Collection
-Although the rig has 3 cameras, Jason's setup/code for collecting data will create a single video stream. Meaning, each camera's video stream will be concatenated together, producing a single video that is 3 camera frames wide. The calibration videos from the rig should be MJPEGs.
+Although the rig has 3 cameras, Jason's setup/code for collecting data will create a single video. Meaning, each camera's video stream will be concatenated together, producing a single video that is 3 camera frames wide. The calibration videos from the rig should be MJPEGs.
 
 ### Checkerboard
 There are a variety of calibration targets available for calibrating a set of cameras. For this repo, it is assumed that we are using checkerboards to calibrate the targets. The most recent checkerboards are 5x4 squares.
