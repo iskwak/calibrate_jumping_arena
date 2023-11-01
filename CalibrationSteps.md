@@ -17,7 +17,7 @@ Although the rig has 3 cameras, Jason's setup/code for collecting data will crea
 There are a variety of calibration targets available for calibrating a set of cameras. For this repo, it is assumed that we are using checkerboards to calibrate the targets. The most recent checkerboards are 5x4 squares.
 
 ## Calibration Steps
-1) Collect calibration videos.
+### 1) Collect calibration videos.
 There are a few goals for the calibration videos.
 * Ideally the checkerboard needs to be visible in the same 3D volume that the mouse will be at.
 * The checkerboard should be seen in as many parts of the image as possible.
@@ -42,7 +42,7 @@ If these guidelines are followed properly, then there is no reason to record the
 
 ADD EXAMPLE IMAGES OF THE TARGETS MOVEMENT
 
-2) Detect corners.
+### 2) Detect corners.
 This repository contains a python script called "findCheckerboards.py". This script will run opencv's findChessboardCorners function to find the corners of the checkerboard and save the corners in a pkl file. 
 
 The parameters of this script can stored in a json file. Example json file:
@@ -75,7 +75,7 @@ Description of parameters:
 
 (GET PICTURES OF SQUARES_XY SQUARE_MM THING)
 
-3) Calibrate each individual camera.
+### 3) Calibrate each individual camera.
 This estimates the intrinsic parameters for a camaera.
 
 Example parameters json file.
@@ -98,3 +98,10 @@ Example command:
 python calibrateCamera.py --params /workspace/calibration/20230830_calibrationvideos/calib_0.json
 ```
 
+### 4) Calibrate pairs of cameras
+
+
+### 5) Estimate the extrinsic parameters between 
+
+
+### 6) Finalize calibration using another repository.
