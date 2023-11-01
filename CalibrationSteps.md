@@ -4,7 +4,7 @@ Jason's Hind Leg Extension Rig currently has 3 cameras pointed to a head fixed m
 
 The goal of the calibration process is to estimate intrinsic and extrinsic parameters. The intrinsic parameters are the focal length, camera center, and lens distortion parameters. The extrinsic parameters are the rotation and translation vectors between cameras.
 
-### More notes on the rig
+### Notes on the rig
 #### Camera Configuration
 The camera configuration has been difficult to calibrate properly. The right and left cameras are effectively pointing at each other, and have been difficult to compute extrinsic parameters. We have decided to calibration the right+center and left+center camera pairs, and then compute the extrinsic parameters from the right camera to the left camera (through the center camera).
 
