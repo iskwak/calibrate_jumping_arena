@@ -19,7 +19,7 @@ There are a variety of calibration targets available for calibrating a set of ca
 ## Calibration Steps
 ### 1) Collect calibration videos.
 There are a few goals for the calibration videos.
-* Ideally the checkerboard needs to be visible in the same 3D volume that the mouse will be at.
+* Ideally the checkerboard needs to be visible in the same 3D volume that the mouse will be.
 * The checkerboard should be seen in as many parts of the image as possible.
 * The checkerboard will need to be visible by 2 cameras.
 * The checkerboard is visible in a way that the corners of the checkerboard are easy to distinguish. If the target is shown at a glancing angle to a camera, it is difficult to accurately determine the corner locations.
