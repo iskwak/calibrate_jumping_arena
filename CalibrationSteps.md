@@ -122,3 +122,4 @@ Because camera 1 and camera 2 was difficult to calibrate using opencv's stereoCa
 
 
 ### 6) Finalize calibration using another repository.
+The output of this process may not work with the actual experiment videos because the target coverage is poor, or a camera has been bumped. Finalizing the calibration is done with <some other repo, in the process of settingup>.
