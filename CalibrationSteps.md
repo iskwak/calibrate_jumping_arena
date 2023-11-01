@@ -1,6 +1,6 @@
 # Calibrating Jason's Hind Leg Extension Rig
 
-Jason's Hind Leg Extension Rig currently has 3 cameras pointed to a head fixed mouse. The mouse is standing on its hind legs and on a platform that can be pushed down. The rig has three cameras that are pointed at the right side, left side, and center body of the mouse. This document describes the process for collecting calibration videos and using this repository for calibrating the rig.
+Jason's Hind Leg Extension Rig currently has 3 cameras pointed to a head fixed mouse. The mouse is standing on its hind legs and on a platform that can be pushed down. The rig has three cameras that are pointed at the right side, left side, and center body of the mouse. This document describes the process for collecting calibration videos and using this repository for calibrating the rig. The 3 cameras, right, left, and center, will be refered as cameras 1, 2, and 3 respectively.
 
 The goal of the calibration process is to estimate intrinsic and extrinsic parameters. The intrinsic parameters are the focal length, camera center, and lens distortion parameters. The extrinsic parameters are the rotation and translation vectors between cameras.
 
@@ -11,12 +11,33 @@ The camera configuration has been difficult to calibrate properly. The right and
 At the time of writing this document, the right and center camera angle is under 90 degrees, and the left and center camera's angle is over 90 degrees. This has made it harder to collect videos where the target is visible to the center and left camera in all areas in the rig.
 
 #### Video Format from Jason's Data Collection
-The videos are 
+Although the rig has 3 cameras, Jason's setup/code for collecting data will create a single video stream. Meaning, each camera's video stream will be concatenated together, producing a single video that is 3 camera frames wide. The calibration videos from the rig should be MJPEGs.
+
+### Checkerboard
+There are a variety of calibration targets available for calibrating a set of cameras. For this repo, it is assumed that we are using checkerboards to calibrate the targets. The most recent checkerboards are 5x4 squares.
 
 ## Calibration Steps
 1) Collect calibration videos.
-* Collect a total of 5 videos to use for calibration. 3 videos will be for calibrating the intrinsic parameters for a single camera. 2 videos will be for collecting videos for calculating extrinsic parameters.
-* 
-Some notes: In the past we collected one large video for calibration, but have found this to be awkward. Instead by collecting one video for one purpose, it was easier to create the calibration videos. 
+There are a few goals for the calibration videos.
+* Ideally the checkerboard needs to be visible in the same 3D volume that the mouse will be at.
+* The checkerboard should be seen in as many parts of the image as possible.
+* The checkerboard will need to be visible by 2 cameras.
+* The checkerboard is visible in a way that the corners of the checkerboard are easy to distinguish. If the target is shown at a glancing angle to a camera, it is difficult to accurately determine the corner locations.
+In these videos, we will leave the jumping platform attached to the rig. This helps the video collector estimate where the mouse will be during the experiments. The platform will not be fixed in place, so the collector can move the platform down (as if the mouse had extended its hind legs).
 
-2) Detect corners.
+Originally the video calibration steps were to collect 5 videos, where each video had a specific purpose.
+1) Video where the target is only visible to camera 1. This video will be used for calibrating the intrinsic parameters of camera 1.
+* In this video, the target is moved along the height and width of the camera view frame, as well as the depth. The goal will be to have frames with the target in the full 3D volume of the rig platform, including when the platform is pushed down.
+2) Video where the target is only visible to camera 2. This video will be used for calibrating the intrinsic parameters of camera 2. It will have the same collection guidelines as video 1.
+3) Video where the target is only visible to camera 3. This video will be used for calibrating the intrinsic parameters of camera 2. It will have the same collection guidelines as video 1.
+4) Video where the target is visible to camera 1 and camera 3. This video will be used for calibrating the extrinsic parameters between cameras 1 and 3.
+* The target will need to be visible to cameras 1 and 3. So the target will need to be at an angle two both cameras.
+* Like videos 1-3, the target will need to be visible to both cameras in the 3D volume that the mouse will be.
+* As the target is moved around, then angle of the target will need to be adjusted because as the target is closer/further from either camera, the viewing angle can become too skewed.
+5) Video where the target is visible to camera 1 and camera 3. This video will be used for calibrating the extrinsic parameters between cameras 2 and 3.
+* This video is similar to video 4, but more difficult to collect. The angle between cameras 2 and 3 has been wide enough that it is difficult to collect video frames where the target is clearly visible from both cameras.
+
+If these guidelines are followed properly, then there is no reason to record the video as 5 seperate videos. However past attempts, where only one video is collected has often missed parts of the guidelines described above. Ideally we'd like each video to be 2 or minutes long.
+
+3) Detect corners.
+This repository uses opencv to detect the corners in the calibration videos. The corners will be saved in a pkl file
