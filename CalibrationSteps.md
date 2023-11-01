@@ -24,7 +24,7 @@ There are a few goals for the calibration videos.
 * The checkerboard will need to be visible by 2 cameras.
 * The checkerboard is visible in a way that the corners of the checkerboard are easy to distinguish. If the target is shown at a glancing angle to a camera, it is difficult to accurately determine the corner locations.
 * In order to avoid moving the checkerboard too fast and having blurry frames. It is advised to move the target slowly and stop moving the target periodically.
-In these videos, we will leave the jumping platform attached to the rig. This helps the video collector estimate where the mouse will be during the experiments. The platform will not be fixed in place, so the collector can move the platform down (as if the mouse had extended its hind legs).
+* In these videos, we will leave the jumping platform attached to the rig. This helps the video collector estimate where the mouse will be during the experiments. The platform will not be fixed in place, so the collector can move the platform down (as if the mouse had extended its hind legs).
 
 Originally the video calibration steps were to collect 5 videos, where each video had a specific purpose.
 1) Video where the target is only visible to camera 1. This video will be used for calibrating the intrinsic parameters of camera 1.
