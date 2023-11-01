@@ -23,6 +23,7 @@ There are a few goals for the calibration videos.
 * The checkerboard should be seen in as many parts of the image as possible.
 * The checkerboard will need to be visible by 2 cameras.
 * The checkerboard is visible in a way that the corners of the checkerboard are easy to distinguish. If the target is shown at a glancing angle to a camera, it is difficult to accurately determine the corner locations.
+* In order to avoid moving the checkerboard too fast and having blurry frames. It is advised to move the target slowly and stop moving the target periodically.
 In these videos, we will leave the jumping platform attached to the rig. This helps the video collector estimate where the mouse will be during the experiments. The platform will not be fixed in place, so the collector can move the platform down (as if the mouse had extended its hind legs).
 
 Originally the video calibration steps were to collect 5 videos, where each video had a specific purpose.
@@ -39,5 +40,61 @@ Originally the video calibration steps were to collect 5 videos, where each vide
 
 If these guidelines are followed properly, then there is no reason to record the video as 5 seperate videos. However past attempts, where only one video is collected has often missed parts of the guidelines described above. Ideally we'd like each video to be 2 or minutes long.
 
-3) Detect corners.
-This repository uses opencv to detect the corners in the calibration videos. The corners will be saved in a pkl file
+ADD EXAMPLE IMAGES OF THE TARGETS MOVEMENT
+
+2) Detect corners.
+This repository contains a python script called "findCheckerboards.py". This script will run opencv's findChessboardCorners function to find the corners of the checkerboard and save the corners in a pkl file. 
+
+The parameters of this script can stored in a json file. Example json file:
+```
+{
+    "base_dir": "/workspace/calibration/20230830_calibrationvideos",
+    "calib_video": "raw/cal_2023_08_30_10_42_25.avi",
+    "detected_corners": "detections/detect_0.pkl",
+    "num_views": 3,
+    "views": [0],
+    "out_video_dir": "outputs",
+    "squares_xy": [4,3],
+    "square_mm": 5,
+    "debug_image": true
+}
+```
+Example command using the above config file:
+```
+python findCheckerboards.py --params /workspace/calibration/20230830_calibrationvideos/detect_0.json
+```
+
+Description of parameters:
+* base_dir: the root of any relative paths for future parameters. For example, detected_corners is a realtive path and the full path would be <base_dir>/<detected_corners>
+* calib_video: The calibration video to detect corners in.
+* detected_corners: The file name to store the detected corners.
+* num_views: The number of camera views
+* views: A list of numbers, that are the views to detect corners.
+* squares_xy: A list of numbers. This is the number of rows and columns of squares. NOTE: This is in opencv's format. If there are 5 column squares, but there are 4 detected corners along the column.
+* square_mm: The real world dimensions for an individual squares edge.
+
+(GET PICTURES OF SQUARES_XY SQUARE_MM THING)
+
+3) Calibrate each individual camera.
+This estimates the intrinsic parameters for a camaera.
+
+Example parameters json file.
+```
+{
+    "base_dir": "/workspace/calibration/20230830_calibrationvideos",
+    "calib_video": "raw/cal_2023_08_30_10_42_25.avi",
+    "detected_corners": "detections/detect_0.pkl",
+    "calibration": ["calibrations/calibration_0.pkl"],
+    "num_views": 3,
+    "views": [0],
+    "out_video_dir": "outputs",
+    "squares_xy": [4,3],
+    "square_mm": 5,
+    "debug_image": true
+}
+```
+Example command:
+```
+python calibrateCamera.py --params /workspace/calibration/20230830_calibrationvideos/calib_0.json
+```
+
