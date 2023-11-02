@@ -60,7 +60,6 @@ def findCheckerboards(params):
             colorSplitAny = []
             colorSplitOrg = []
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
             
             allFound = True
             for i in range(len(cameraIds)):
@@ -97,9 +96,9 @@ def findCheckerboards(params):
                     detectedCorners["corners2"][cameraIds[i], frameNum, :, :, :] = currentCorners2[cameraIds[i], :, :, :]
                     detectedCorners["frameNumbers"].append(frameNum)
 
-            fullFrame = np.concatenate([fullFrame, bottomFrame], axis=0)
+            #fullFrame = np.concatenate([fullFrame, bottomFrame], axis=0)
                 
-            writer.write(fullFrame)
+            #writer.write(fullFrame)
         else:
             break
 
@@ -107,10 +106,6 @@ def findCheckerboards(params):
         if params["debug"] and frameNum > 100:
             break
 
-    outname = "/workspace/calibration/20230830_calibrationvideos/test.png"
-    utilities.plotSampled(cap, outname, detectedCorners["corners2"][cameraIds[0]], 0)
-
-    cap.release()
     cv2.destroyAllWindows()
     
     if params["out_video_dir"] is not None:
@@ -121,19 +116,27 @@ def findCheckerboards(params):
         for i in range(len(cameraIds)):
             outName = outName + str(cameraIds[i])
         outname = os.path.join(params["base_dir"], params["out_video_dir"], outName+".jpg")
+        os.makedirs(os.path.join(params["base_dir"], params["out_video_dir"]), exist_ok=True)
         cv2.imwrite(outname, baseFrame)
 
 
     print("Num found frames " + str(len(detectedCorners["frameNumbers"])))
     corners = detectedCorners["corners"][:, detectedCorners["frameNumbers"], :, :, :]
     corners2 = detectedCorners["corners2"][:, detectedCorners["frameNumbers"], :, :, :]
+    outname = os.path.join(params["base_dir"], "test.png")
+    utilities.plotSampled(cap, outname, detectedCorners["corners2"][cameraIds[0]], squares_xy, 0)
 
-    cornerData = MultiCamCheckerboardCorners(numViews, cameraIds, params["calib_video"], corners, corners2, detectedCorners["frameNumbers"], (width, height), squares_xy)
+    cornerData = MultiCamCheckerboardCorners(numViews, cameraIds, params["calib_video"], corners, corners2, detectedCorners["frameNumbers"], (width, height), squares_xy, params["square_mm"])
     cornerData = cornerData.toDict()
 
     outname = os.path.join(params["base_dir"], params["detected_corners"])
+    outpath, _ = os.path.split(outname)
+    os.makedirs(outpath, exist_ok=True)
+    print(outname)
     with open(outname, "wb") as fid:
         pickle.dump(cornerData, fid)
+
+    cap.release()
 
 
 if __name__ == "__main__":

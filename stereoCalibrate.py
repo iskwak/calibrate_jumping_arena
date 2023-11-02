@@ -133,6 +133,8 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
 
     # imgpoints1 = detectedCorners.corners2[cameraIds[0], idx[:numSamples], :, :].astype('float32')
     # imgpoints2 = detectedCorners.corners2[cameraIds[1], idx[:numSamples], :, :].astype('float32')
+    sampledCorners = detectedCorners.corners2[:, idx[:numSamples], :, :]
+    sampledFrameNumbers = np.asarray(detectedCorners.frameNumbers)[idx[:numSamples]]
     corners = detectedCorners.corners2[cameraIds, :, :, :].astype('float32')
     corners = corners[:, idx[:numSamples], :, :]
 
@@ -148,7 +150,7 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
 
     outname = os.path.join(
         params["base_dir"], params["out_video_dir"], "stereo_corners_"+
-        str(cameraIds[0])+str(cameraIds[1])+".svg")
+        str(cameraIds[0])+str(cameraIds[1])+".png")
     utilities.plotPairCorners(cap, outname, corners, 512, np.asarray(offsets)[cameraIds])
 
     start_time = time.time()
@@ -166,6 +168,8 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     projMat2 = RT2
 
     mean_error = 0
+    allTriangulated = np.zeros((numSamples, corners.shape[2], 3))
+    allReprojected = np.zeros((numSamples, corners.shape[2], 2, 2))
     for i in range(corners.shape[1]):
         points1u = cv2.undistortPoints(corners[0, i, :, :, :], mtx1, dist1, R=None, P=None)
         points2u = cv2.undistortPoints(corners[1, i, :, :, :], mtx2, dist2, R=None, P=None)
@@ -184,6 +188,9 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
         error = np.sqrt(np.sum(np.square(corners[1, i, :, :, :].squeeze() - imgpointsReproj2.squeeze()), axis=1)).sum() / imgpointsReproj2.shape[0]
         mean_error += error
 
+        allTriangulated[i, :, :] = cam1RefPoints
+        allReprojected[i, :, :, 0] = imgpointsReproj.squeeze()
+        allReprojected[i, :, :, 1] = imgpointsReproj2.squeeze()
         writeStereoReprojection(
             cap, params["base_dir"], corners[:, i, :, :, :],
             np.asarray([imgpointsReproj, imgpointsReproj2]),
@@ -204,7 +211,7 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
         "calib_name_right": "cam_{}".format(cameraIds[1]),
         "cam0_id": cameraIds[0],
         "cam1_id": cameraIds[1],
-        "dX": 3,
+        "dX": 5,
         "nx": 512,
         "ny": 512,
         "fc_left": [mtx1[0, 0], mtx1[1, 1]],
@@ -227,18 +234,15 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     }
     scipy.io.savemat("{}/cam_{}{}_opencv.mat".format(
         params["base_dir"], cameraIds[0], cameraIds[1]), out_dict)
-    # # save sampled points for testing in matlab.
-    # out_dict2 = {
-    #     "imgpoints1": imgpoints1,
-    #     "imgpoints2": imgpoints2,
-    #     "all_triangulated": all_triangulated,
-    #     "all_reproj1": all_reproj1,
-    #     "all_reproj2": all_reproj2,
-    #     "frame_numbers": all_frame_numbers
-    # }
-    # print("saving...")
-    # scipy.io.savemat("{}/sampled_{}{}.mat".format(FLAGS.out_dir, cam1_id, cam2_id), out_dict2)
-
+    # save sampled points for testing in matlab.
+    out_dict2 = {
+        "sampledCorners": sampledCorners,
+        "allTriangulated": allTriangulated,
+        "allReprojected": allReprojected,
+        "frameNumbers": sampledFrameNumbers
+    }
+    print("saving...")
+    scipy.io.savemat("{}/sampled_{}{}.mat".format(params["base_dir"], cameraIds[0], cameraIds[1]), out_dict2)
 
 def main(params):
 

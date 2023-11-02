@@ -159,7 +159,7 @@ def main(params):
                 params["out_video_dir"],
                 "cam_{}_sampled.svg".format(cameraIds[i]))
 
-            utilities.plotSampled(cap, outname, sampled, offsets[cameraIds[i]])
+            utilities.plotSampled(cap, outname, sampled, squares_xy, offsets[cameraIds[i]])
         print("total pixel mean error: {}".format(meanPixelError/(squares_xy[0] * squares_xy[1] * numClusters)))
 
 

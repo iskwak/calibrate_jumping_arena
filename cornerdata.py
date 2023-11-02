@@ -12,9 +12,9 @@ class MultiCamCheckerboardCorners:
     frameNumbers = []
     frameSize = (0, 0)
     squares_xy = (7,6)
-    square_mm = 3
+    square_mm = 5
 
-    def __init__(self, numViews: int, cameraIds: List[int], videoName: str, corners: npt, corners2: npt, frameNumbers: List[int], frameSize: Optional[Tuple[int, int]]=(512,512), squares_xy: Optional[Tuple[int, int]]=(7,6), square_mm: Optional[int]=3):
+    def __init__(self, numViews: int, cameraIds: List[int], videoName: str, corners: npt, corners2: npt, frameNumbers: List[int], frameSize: Optional[Tuple[int, int]]=(512,512), squares_xy: Optional[Tuple[int, int]]=(7,6), square_mm: Optional[int]=5):
         self.numViews = numViews
         self.cameraIds = cameraIds
         self.videoName = videoName

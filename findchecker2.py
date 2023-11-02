@@ -109,8 +109,8 @@ def findCheckerboards(params):
             break
 
         frameNum = frameNum + 1
-        if frameNum > 500:
-            break
+        # if frameNum > 500:
+        #     break
 
     # outname = "/workspace/calibration/20230830_calibrationvideos/test.png"
     # utilities.plotSampled(cap, outname, detectedCorners["corners2"][cameraIds[0]], 0)

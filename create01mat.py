@@ -48,7 +48,7 @@ def main(params):
         "calib_name_right": "cam_{}".format(cameraIds[1]),
         "cam0_id": cameraIds[0],
         "cam1_id": cameraIds[1],
-        "dX": 3,
+        "dX": 5,
         "nx": 512,
         "ny": 512,
         "fc_left": [mtx1[0, 0], mtx1[1, 1]],
