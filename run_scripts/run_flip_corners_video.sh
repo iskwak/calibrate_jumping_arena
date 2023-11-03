@@ -1,1 +1,0 @@
-python flip_corners.py --calib_frames ../calibration/calib_frames.pkl --flipped_name ../calibration/blah.pkl --output_video ../calibration/flip_video_test.avi --input_video ../calibration/calibrate_2022_07_06_14_55_42.mp4 

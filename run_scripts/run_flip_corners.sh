@@ -1,3 +1,0 @@
-#python flip_corners.py --calib_frames ../../calibration/calib_frames.pkl --flipped_name ../../calibration/flipped_frames.pkl --input_video ../../calibration/calibrate_2022_07_06_14_55_42.mp4 --output_video ../../calibration/flip_video_test.avi --crop
-#python flip_corners.py --calib_frames ../../calibration/calib_frames.pkl --flipped_name ../../calibration/flipped_frames.pkl
-python flip_corners.py --calib_frames ../calibration/calib_frames_new.pkl --flipped_name ../calibration/flipped_frames.pkl 
