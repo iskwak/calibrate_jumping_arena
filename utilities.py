@@ -9,6 +9,20 @@ import matplotlib
 matplotlib.use("Agg")
 
 
+def loadVideo(calibVideoName, numViews):
+    cap = cv2.VideoCapture(calibVideoName)
+    if not cap.isOpened():
+        print("{}: failed to open\n".format(calibVideoName))
+        exit()
+    fullWidth  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    width = int(fullWidth / numViews)
+    fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    return cap, width, fullWidth, height, fourcc, fps
+
+
 def plotSampled(cap, outname, checkerboards, squares_xy, offset):
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     _, frame = cap.read()

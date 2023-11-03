@@ -10,12 +10,7 @@ import utilities
 
 def findCheckerboards(params):
     numViews = params["num_views"]
-    cap = cv2.VideoCapture(os.path.join(params["base_dir"], params["calib_video"]))
-    fullWidth  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    width = int(fullWidth / numViews)
-    fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap, width, fullWidth, height, fourcc, fps = utilities.loadVideo(os.path.join(params["base_dir"], params["calib_video"]), numViews)
     squares_xy = tuple(params["squares_xy"])
     cameraIds = params["views"]
 
@@ -132,7 +127,6 @@ def findCheckerboards(params):
     outname = os.path.join(params["base_dir"], params["detected_corners"])
     outpath, _ = os.path.split(outname)
     os.makedirs(outpath, exist_ok=True)
-    print(outname)
     with open(outname, "wb") as fid:
         pickle.dump(cornerData, fid)
 
