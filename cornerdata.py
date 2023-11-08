@@ -8,20 +8,20 @@ class MultiCamCheckerboardCorners:
     cameraIds = []
     videoName = []
     corners = []
-    corners2 = []
+    cameraCameraFlag = []
     frameNumbers = []
     frameSize = (0, 0)
     squares_xy = (7,6)
     square_mm = 5
 
-    def __init__(self, numViews: int, cameraIds: List[int], videoName: str, corners: npt, corners2: npt, frameNumbers: List[int], frameSize: Optional[Tuple[int, int]]=(512,512), squares_xy: Optional[Tuple[int, int]]=(7,6), square_mm: Optional[int]=5):
+    def __init__(self, numViews: int, cameraIds: List[int], videoName: str, corners: npt, cornerCameraFlag: npt, frameNumbers: List[int], frameSize: Optional[Tuple[int, int]]=(512,512), squares_xy: Optional[Tuple[int, int]]=(7,6), square_mm: Optional[int]=5):
         self.numViews = numViews
         self.cameraIds = cameraIds
         self.videoName = videoName
 
         self.corners = corners
-        self.corners2 = corners2
         self.frameNumbers = frameNumbers
+        self.cornerCameraFlag = cornerCameraFlag
 
         self.frameSize = frameSize
         self.square_mm = square_mm
@@ -31,10 +31,8 @@ class MultiCamCheckerboardCorners:
     @classmethod
     def fromDict(cls, dataDict: dict) -> Type["MultiCamCheckerboardCorners"]:
         cornerData = cls(dataDict["numViews"], dataDict["cameraIds"], dataDict["videoName"],
-                        dataDict["corners"], dataDict["corners2"], dataDict["frameNumbers"],
+                        dataDict["corners"], dataDict["cornerCameraFlag"], dataDict["frameNumbers"],
                         dataDict["frameSize"], dataDict["squares_xy"], dataDict["square_mm"])
-        # cornerData.square_mm = dataDict["square_mm"]
-        # cornerData.squares_xy = dataDict["squares_xy"]
         return cornerData
 
 
@@ -44,11 +42,11 @@ class MultiCamCheckerboardCorners:
             "cameraIds": self.cameraIds,
             "videoName": self.videoName,
             "corners": self.corners,
-            "corners2": self.corners2,
             "frameNumbers": self.frameNumbers,
             "frameSize": self.frameSize,
             "squares_xy": self.squares_xy,
-            "square_mm": self.square_mm
+            "square_mm": self.square_mm,
+            "cornerCameraFlag": self.cornerCameraFlag
         }
 
         return dataDict
