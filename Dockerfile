@@ -13,6 +13,6 @@ RUN pip install matplotlib
 RUN pip install scipy
 
 WORKDIR /code
-RUN git clone git@github.com:iskwak/calibrate_jumping_arena.git
+RUN git clone https://github.com/iskwak/calibrate_jumping_arena.git
 
 WORKDIR /workspace
