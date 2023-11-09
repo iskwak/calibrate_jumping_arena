@@ -53,33 +53,15 @@ def plotReprojection(cap, frameNum, offset, outname, points, reprojected):
     plt.close()
 
 
-# def plotSampled(cap, outname, sampledFrames, offset):
-#     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-#     _, frame = cap.read()
-
-#     # adjust the corners
-#     frame = frame.copy()
-#     frame = frame[:, offset:offset+512]
-#     # need to flip the corners
-#     points = sampledFrames.copy()
-
-#     points = points.squeeze()
-#     color_id = np.arange(points.shape[0])
-
-#     plt.imshow(frame)
-#     for i in range(points.shape[0]):
-#         plt.scatter(points[i, :, 0], points[i, :, 1], 12, c=[color_id[i]]*points.shape[1], cmap='cool', marker='x', linewidths=1)
-#     plt.savefig(outname)
-#     plt.close()
-
-
 def sampleCorners(rng, corners, numClusters=100, seed=123):
     centroids, _ = kmeans(corners, numClusters, seed=seed)
     clx, _ = vq(corners, centroids)
 
-    sampledIdx = np.zeros((numClusters,))
-    for i in range(numClusters):
+    # if the number of centroids is less than the requested, return less samples.
+    sampledIdx = np.zeros((centroids.shape[0],))
+    for i in range(centroids.shape[0]):
         clusteredIdx = np.where(clx == i)
+
         # np.where returns a tuple for me, i don't understand, because it looks like the
         # documentation says it outputs an array
         clusteredIdx = clusteredIdx[0]
@@ -117,12 +99,18 @@ def main(params):
 
     for i in range(len(cameraIds)):
         objpoints = detectedCorners.setupObjPoints()
-        corners = detectedCorners.corners[:,detectedCorners.cornerCameraFlag[i, :], :, :, :]
-        corners = corners[i, :, :, :]
-        frameNumbers = detectedCorners.frameNumbers[detectedCorners.cornerCameraFlag[i, :]]
+
+        corners = detectedCorners.corners[:,detectedCorners.cornerCameraFlag[cameraIds[i], :], :, :, :]
+        corners = corners[cameraIds[i], :, :, :]
+        frameNumbers = detectedCorners.frameNumbers[detectedCorners.cornerCameraFlag[cameraIds[i], :]]
+
         sampledIdx = sampleCorners(rng, corners.squeeze()[:, 0, :], numClusters, seed)
         sampled = corners[sampledIdx, :, :]
         sampledFrames = np.asarray(frameNumbers)[sampledIdx]
+        if numClusters != sampledIdx.shape[0]:
+            print("Warning: unable to sample {} checkerboard frames, only sampled {} checkerboard frames.".format(numClusters, sampledIdx.shape[0]))
+        numClusters = sampledIdx.shape[0]
+
         _, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints[:numClusters], sampled, (512, 512), None, None)
         calibrationData = {
             "mtx": mtx,
