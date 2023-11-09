@@ -8,7 +8,7 @@ class MultiCamCheckerboardCorners:
     cameraIds = []
     videoName = []
     corners = []
-    cameraCameraFlag = []
+    cornerCameraFlag = []
     frameNumbers = []
     frameSize = (0, 0)
     squares_xy = (7,6)
@@ -19,7 +19,7 @@ class MultiCamCheckerboardCorners:
         self.cameraIds = cameraIds
         self.videoName = videoName
 
-        self.corners = corners
+        self.corners = corners.astype('float32')
         self.frameNumbers = frameNumbers
         self.cornerCameraFlag = cornerCameraFlag
 

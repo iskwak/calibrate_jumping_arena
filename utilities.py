@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 # import matplotlib
 # from matplotlib import pyplot as plt
-matplotlib.use("Agg")
+#matplotlib.use("Agg")
 
 
 def loadVideo(calibVideoName, numViews):
@@ -49,7 +49,6 @@ def plotSampled(cap, outname, checkerboards, squares_xy, offset):
         colorIdx = int((meansEdges[i]-minMeanEdge)/maxMeanEdge * 99)  #int(np.floor(float((meansEdges[i]-minMeanEdge))/maxMeanEdge))
         plt.scatter(points[i, :, 0], points[i, :, 1], k, color=colors[colorIdx, :], marker='.', linewidths=1, alpha=j)
         #plt.scatter(points[i, :, 0], points[i, :, 1], k , color='r', marker='.', linewidths=1, alpha=j)
-    outname = '/workspace/calibration/20230830_calibrationvideos/test_colors_{:.2f}_{:.2f}.jpg'.format(k,j)
     plt.savefig(outname)
     plt.close()
 

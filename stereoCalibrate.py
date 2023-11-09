@@ -131,12 +131,21 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     objpoints = detectedCorners.setupObjPoints()
     objpoints = objpoints[:numSamples]
 
-    # imgpoints1 = detectedCorners.corners2[cameraIds[0], idx[:numSamples], :, :].astype('float32')
-    # imgpoints2 = detectedCorners.corners2[cameraIds[1], idx[:numSamples], :, :].astype('float32')
-    sampledCorners = detectedCorners.corners2[:, idx[:numSamples], :, :]
-    sampledFrameNumbers = np.asarray(detectedCorners.frameNumbers)[idx[:numSamples]]
-    corners = detectedCorners.corners2[cameraIds, :, :, :].astype('float32')
-    corners = corners[:, idx[:numSamples], :, :]
+    # # imgpoints1 = detectedCorners.corners2[cameraIds[0], idx[:numSamples], :, :].astype('float32')
+    # # imgpoints2 = detectedCorners.corners2[cameraIds[1], idx[:numSamples], :, :].astype('float32')
+    # sampledCorners = detectedCorners.corners2[:, idx[:numSamples], :, :]
+    # sampledFrameNumbers = np.asarray(detectedCorners.frameNumbers)[idx[:numSamples]]
+    # corners = detectedCorners.corners2[cameraIds, :, :, :].astype('float32')
+    # corners = corners[:, idx[:numSamples], :, :]
+    cameraFlags = detectedCorners.cornerCameraFlag[0, :]
+    for i in range(len(cameraIds)):
+        cameraFlags = cameraFlags * detectedCorners.cornerCameraFlag[cameraIds[i], :]
+
+    corners = detectedCorners.corners[:,cameraFlags, :numSamples, :, :]
+    corners = corners[cameraIds, :numSamples, :, :]
+    frameNumbers = detectedCorners.frameNumbers[cameraFlags][:numSamples]
+    sampledCorners = corners
+    sampledFrameNumbers = frameNumbers
 
     # outname = os.path.join(
     #     params["base_dir"], params["out_video_dir"], "test_"+

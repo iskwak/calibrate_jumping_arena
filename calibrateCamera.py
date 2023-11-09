@@ -114,12 +114,15 @@ def main(params):
         cameraIds = params["views"]
     offsets = [i*detectedCorners.frameSize[0] for i in range(numViews)]
 
+
     for i in range(len(cameraIds)):
         objpoints = detectedCorners.setupObjPoints()
-        corners = detectedCorners.corners2[cameraIds[i], :, :, :].astype('float32')
+        corners = detectedCorners.corners[:,detectedCorners.cornerCameraFlag[i, :], :, :, :]
+        corners = corners[i, :, :, :]
+        frameNumbers = detectedCorners.frameNumbers[detectedCorners.cornerCameraFlag[i, :]]
         sampledIdx = sampleCorners(rng, corners.squeeze()[:, 0, :], numClusters, seed)
         sampled = corners[sampledIdx, :, :]
-        sampledFrames = np.asarray(detectedCorners.frameNumbers)[sampledIdx]
+        sampledFrames = np.asarray(frameNumbers)[sampledIdx]
         _, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints[:numClusters], sampled, (512, 512), None, None)
         calibrationData = {
             "mtx": mtx,
@@ -130,6 +133,9 @@ def main(params):
             "cornerFile": os.path.join(params["base_dir"], params["detected_corners"])
         }
 
+        fullOutDir = os.path.split(os.path.join(params["base_dir"], params["calibration"][i]))[0]
+        if not os.path.isdir(fullOutDir):
+            os.makedirs(fullOutDir)
         with open(os.path.join(params["base_dir"], params["calibration"][i]), "wb") as fid:
             pickle.dump(calibrationData, fid)
 
