@@ -1,0 +1,13 @@
+{
+    "base_dir": "sampledata",
+    "calib_video": "cal_2023_10_27_15_34_58.avi",
+    "detected_corners": "detections/detect.pkl",
+    "calibration": ["calibrations/calib_1.pkl"],
+    "num_views": 3,
+    "views": [1],
+    "out_video_dir": "outputs",
+    "squares_xy": [4,3],
+    "square_mm": 5,
+    "debug_image": true,
+    "group_detect": true
+}

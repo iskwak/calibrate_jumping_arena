@@ -1,0 +1,7 @@
+{
+    "base_dir": "sampledata",
+    "detected_corners": "detections/detect.pkl",
+    "views": [0,1,2],
+    "output_dir": "outputs",
+    "debug": true
+}
