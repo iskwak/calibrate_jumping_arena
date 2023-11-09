@@ -127,7 +127,7 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     objpoints = objpoints[:numSamples]
 
     # create a mask for corners that appear in multiple cameras
-    cameraFlags = detectedCorners.cornerCameraFlag[0, :]
+    cameraFlags = detectedCorners.cornerCameraFlag[cameraIds[0], :]
     for i in range(len(cameraIds)):
         cameraFlags = cameraFlags * detectedCorners.cornerCameraFlag[cameraIds[i], :]
 
