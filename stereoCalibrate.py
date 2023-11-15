@@ -136,6 +136,10 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     corners = detectedCorners.corners[cameraIds, :, :, :, :]
     corners = corners[:, cameraFlags, :, :, :]
     numFrames = corners.shape[1]
+    sampledCorners = np.zeros(detectedCorners.corners.shape)
+    sampledCorners.fill(np.nan)
+    sampledCorners[cameraIds, :, :, :, :] = detectedCorners.corners[cameraIds, :, :, :, :]
+    sampledCorners = sampledCorners[:, cameraFlags, :, :, :]
 
     # rng shuffle is in place
     shuffledIdx = list(range(numFrames))
@@ -232,7 +236,7 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
         params["base_dir"], cameraIds[0], cameraIds[1]), out_dict)
     # save sampled points for testing in matlab.
     out_dict2 = {
-        "sampledCorners": corners,
+        "sampledCorners": sampledCorners,
         "allTriangulated": allTriangulated,
         "allReprojected": allReprojected,
         "frameNumbers": sampledFrameNumbers
