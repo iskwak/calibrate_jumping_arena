@@ -6,13 +6,17 @@ import calibflags
 import os
 import sys
 import utilities
+from tqdm import tqdm
 
 
 def findCheckerboards(params):
     numViews = params["num_views"]
-    cap, width, fullWidth, height, fourcc, fps = utilities.loadVideo(os.path.join(params["base_dir"], params["calib_video"]), numViews)
+    cap, videoprops = utilities.loadVideo(os.path.join(params["base_dir"], params["calib_video"]), numViews)
     squares_xy = tuple(params["squares_xy"])
     cameraIds = params["views"]
+    width = videoprops['width']
+    height = videoprops['height']
+    numFrames = videoprops['nframes']
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
 
@@ -27,7 +31,6 @@ def findCheckerboards(params):
     #         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
 
-    numFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     numCorners = squares_xy[0] * squares_xy[1]
     detectedCorners = {
         "corners": np.zeros((numViews, numFrames, numCorners, 1, 2)),
@@ -37,31 +40,34 @@ def findCheckerboards(params):
 
     frameNum = 0
     foundFrameFlag = np.zeros((numFrames,), dtype=bool)
-    while cap.isOpened():
-        ret, frame = cap.read()
+    
+    with tqdm(total=numFrames) as pbar:
+      while cap.isOpened():
+          ret, frame = cap.read()
 
-        if ret == True:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+          if ret == True:
+              gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            for i in range(len(cameraIds)):
-                start = cameraIds[i]*width
-                end = (cameraIds[i]+1)*width
-                
-                graySplit = gray[:, start:end]
-                #color = frame[:, start:end, :]
+              for i in range(len(cameraIds)):
+                  start = cameraIds[i]*width
+                  end = (cameraIds[i]+1)*width
+                  
+                  graySplit = gray[:, start:end]
+                  #color = frame[:, start:end, :]
 
-                ret, corners = cv2.findChessboardCorners(graySplit, squares_xy, None)
-                if ret == True:
-                    corners2 = cv2.cornerSubPix(graySplit, corners, (5, 5), (-1,-1), criteria)
-                    detectedCorners["corners"][i, frameNum, :, :, :] = corners2
-                    detectedCorners["cornerCameraFlag"][i, frameNum] = True
-                    foundFrameFlag[frameNum] = True
-        else:
-            break
+                  ret, corners = cv2.findChessboardCorners(graySplit, squares_xy, None)
+                  if ret == True:
+                      corners2 = cv2.cornerSubPix(graySplit, corners, (5, 5), (-1,-1), criteria)
+                      detectedCorners["corners"][i, frameNum, :, :, :] = corners2
+                      detectedCorners["cornerCameraFlag"][i, frameNum] = True
+                      foundFrameFlag[frameNum] = True
+          else:
+              break
 
-        frameNum = frameNum + 1
-        if params["debug"] and frameNum > 500:
-            break
+          frameNum = frameNum + 1
+          if params["debug"] and frameNum > 500:
+              break
+          pbar.update(1)
 
     cap.release()
 
@@ -92,5 +98,5 @@ def findCheckerboards(params):
 
 
 if __name__ == "__main__":
-    params = calibflags.parseArgs(sys.argv[1:])
+    params = calibflags.parseArgs(sys.argv[1:],paramtype='detect')
     findCheckerboards(params)

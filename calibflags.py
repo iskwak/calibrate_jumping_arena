@@ -13,11 +13,11 @@ import json
 # flags.DEFINE_string("params", None, "json param file")
 
 
-def parseArgs(argv, description=""):
+def parseArgs(argv, description="",paramtype=None):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--out_video", type=str)
     parser.add_argument("--calib_video", type=str)
-    parser.add_argument("--detectd_corners", type=str)
+    parser.add_argument("--detected_corners", type=str)
     parser.add_argument("--calib_data", type=str)
     parser.add_argument("--num_views", type=int, default=3)
     parser.add_argument("--debug", action="store_true")
@@ -28,6 +28,11 @@ def parseArgs(argv, description=""):
     if args["params"] is not None:
         with open(args["params"], "r") as f:
             json_params = json.load(f)
+            if paramtype is not None:
+              if 'general' in json_params:
+                args.update(json_params['general'])
+              if paramtype in json_params:
+                json_params = json_params[paramtype]
         args.update(json_params)
 
     return args

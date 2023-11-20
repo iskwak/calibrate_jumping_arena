@@ -13,7 +13,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 matplotlib.use("Agg")
 import utilities
-
+from tqdm import tqdm
 
 def plotReprojection(cap, frameNum, offset, outname, points, reprojected):
     cap.set(cv2.CAP_PROP_POS_FRAMES, frameNum)
@@ -96,8 +96,10 @@ def main(params):
         cameraIds = params["views"]
     offsets = [i*detectedCorners.frameSize[0] for i in range(numViews)]
 
+    utilities.setCalibrationFileNames(params)
 
     for i in range(len(cameraIds)):
+        print(f'Intrinsic calibration for view {cameraIds[i]} ({i+1}/{len(cameraIds)})')
         objpoints = detectedCorners.setupObjPoints()
 
         corners = detectedCorners.corners[:,detectedCorners.cornerCameraFlag[cameraIds[i], :], :, :, :]
@@ -124,6 +126,10 @@ def main(params):
         fullOutDir = os.path.split(os.path.join(params["base_dir"], params["calibration"][i]))[0]
         if not os.path.isdir(fullOutDir):
             os.makedirs(fullOutDir)
+        fullOutVideoDir = os.path.join(params["base_dir"],params["out_video_dir"])
+        if not os.path.isdir(fullOutVideoDir):
+            os.makedirs(fullOutVideoDir)
+        print(f'Outputting calibration to {params["calibration"][i]}...')
         with open(os.path.join(params["base_dir"], params["calibration"][i]), "wb") as fid:
             pickle.dump(calibrationData, fid)
 
@@ -131,7 +137,8 @@ def main(params):
         worstError = 0
         worstErrorIdx = 0
         allReprojections = []
-        for j in range(numClusters):
+        print(f'Computing, plotting reprojection error')
+        for j in tqdm(range(numClusters)):
             imgpoints2, _ = cv2.projectPoints(objpoints[j], rvecs[j], tvecs[j], mtx, dist)
             allReprojections.append(imgpoints2)
             errorPixel = np.sqrt(np.sum(np.square(sampled[j].squeeze() - imgpoints2.squeeze()), axis=1))
@@ -158,5 +165,5 @@ def main(params):
 
 
 if __name__ == "__main__":
-    params = calibflags.parseArgs(sys.argv[1:])
+    params = calibflags.parseArgs(sys.argv[1:],paramtype="intrinsic")
     main(params)

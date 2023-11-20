@@ -17,14 +17,14 @@ import utilities
 
 def plotDetectionCorners(detectedCorners):
 
-    cap, width, fullWidth, height, fourcc, fps = utilities.loadVideo(detectedCorners.videoName, detectedCorners.numViews)
+    cap,videoprops = utilities.loadVideo(detectedCorners.videoName, detectedCorners.numViews)
     cameraIds =detectedCorners.cameraIds
     fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     fullOutDir = os.path.join(params["base_dir"], params["output_dir"])
     outname = os.path.join(fullOutDir, "detection_movie.avi")
     if not os.path.isdir(fullOutDir):
         os.makedirs(fullOutDir)
-    writer = cv2.VideoWriter(outname, fourcc, fps, (fullWidth, height))
+    writer = cv2.VideoWriter(outname, fourcc, videoprops['fps'], (videoprops['fullWidth'], videoprops['height']))
 
     # create a plot with all the detections on one image.
     

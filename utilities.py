@@ -14,13 +14,17 @@ def loadVideo(calibVideoName, numViews):
     if not cap.isOpened():
         print("{}: failed to open\n".format(calibVideoName))
         exit()
-    fullWidth  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    width = int(fullWidth / numViews)
-    fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    fullWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    props = {
+      'fullWidth': fullWidth,
+      'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+      'width': int(fullWidth / numViews),
+      'fourcc': int(cap.get(cv2.CAP_PROP_FOURCC)),
+      'fps': cap.get(cv2.CAP_PROP_FPS),
+      'nframes': int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    }
 
-    return cap, width, fullWidth, height, fourcc, fps
+    return cap, props
 
 
 def plotSampled(cap, outname, checkerboards, squares_xy, offset):
@@ -107,3 +111,7 @@ def getCornerDistances(checkerCorners, squares_xy):
             idx+=1
 
     return distances
+
+def setCalibrationFileNames(params):
+  params['calibration'] = [f'{params["calibration_filestr"]}{i}.pkl' for i in range(params["num_views"])]
+  return

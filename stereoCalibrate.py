@@ -14,6 +14,7 @@ import scipy.io
 import calibrateCamera
 import os
 import utilities
+from tqdm import tqdm
 import matplotlib
 matplotlib.use("TkAgg")
 
@@ -170,7 +171,8 @@ def stereoCalibrate(params, detectedCorners, cameraCalibrations):
     mean_error = 0
     allTriangulated = np.zeros((numSamples, corners.shape[2], 3))
     allReprojected = np.zeros((numSamples, corners.shape[2], 2, 2))
-    for i in range(corners.shape[1]):
+    print('Computing/plotting reprojections...')
+    for i in tqdm(range(corners.shape[1])):
         points1u = cv2.undistortPoints(corners[0, i, :, :, :], mtx1, dist1, R=None, P=None)
         points2u = cv2.undistortPoints(corners[1, i, :, :, :], mtx2, dist2, R=None, P=None)
         #triangulated = cv2.triangulatePoints(proj_mat1, proj_mat2, imgpoints1[i], imgpoints2[i])
@@ -260,5 +262,15 @@ def main(params):
 
 
 if __name__ == "__main__":
-    params = calibflags.parseArgs(sys.argv[1:])
-    main(params)
+    params = calibflags.parseArgs(sys.argv[1:],paramtype="stereo")
+    utilities.setCalibrationFileNames(params)
+
+    if (len(params['views']) == 2) and type(params['views'][0]) is not list:
+      cameraIdPairs = [params['views'],]
+    else:
+      cameraIdPairs = params["views"]
+    
+    for cameraIds in cameraIdPairs:
+      print(f'Calibrating camera pair {cameraIds}...')
+      params['views'] = cameraIds
+      main(params)
